@@ -112,6 +112,26 @@ class AristaConfigCommandMode(CommandMode):
             raise Exception(error_message)
 
 
+class AristaVrfCommandMode(CommandMode):
+    PROMPT = r'\(vrf:{}\)#\s*$'
+    ENTER_COMMAND = 'routing-context vrf {}'
+    EXIT_COMMAND = ENTER_COMMAND.format('default')
+
+    class _parent_mode(object):
+        prompt = AristaEnableCommandMode.PROMPT
+
+    def __init__(self, vrf_name):
+        self.vrf_name = vrf_name
+
+        super(AristaVrfCommandMode, self).__init__(
+            self.PROMPT.format(vrf_name),
+            self.ENTER_COMMAND.format(vrf_name),
+            exit_command=self.EXIT_COMMAND,
+        )
+
+        self.parent_node = self._parent_mode
+
+
 CommandMode.RELATIONS_DICT = {
     AristaDefaultCommandMode: {
         AristaEnableCommandMode: {

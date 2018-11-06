@@ -4,7 +4,7 @@ from cloudshell.cli.command_template.command_template import CommandTemplate
 
 
 COPY = CommandTemplate(
-    'copy {src} {dst} [vrf {vrf}]',
+    'copy {src} {dst}',
     action_map=OrderedDict({
         r'\[confirm\]': lambda session, logger: session.send_line('', logger),
         r'\(y/n\)': lambda session, logger: session.send_line('y', logger),

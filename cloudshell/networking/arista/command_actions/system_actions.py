@@ -6,6 +6,7 @@ from cloudshell.cli.command_template.command_template_executor import CommandTem
 from cloudshell.cli.session.session_exceptions import ExpectedSessionException, CommandExecutionException
 from cloudshell.devices.networking_utils import UrlParser
 
+from cloudshell.networking.arista.cli.arista_command_modes import AristaVrfCommandMode
 from cloudshell.networking.arista.command_templates import configuration
 from cloudshell.networking.arista.command_templates import firmware
 
@@ -62,15 +63,19 @@ class SystemActions(object):
         :raise Exception:
         """
 
-        if not vrf:
-            vrf = None
+        def command_executor():
+            return CommandTemplateExecutor(
+                self._cli_service, configuration.COPY,
+                action_map=action_map,
+                error_map=error_map,
+                timeout=timeout,
+            ).execute_command(src=source, dst=destination)
 
-        output = CommandTemplateExecutor(self._cli_service, configuration.COPY,
-                                         action_map=action_map,
-                                         error_map=error_map,
-                                         timeout=timeout).execute_command(src=source,
-                                                                          dst=destination,
-                                                                          vrf=vrf)
+        if not vrf:
+            output = command_executor()
+        else:
+            with self._cli_service.enter_mode(AristaVrfCommandMode(vrf)):
+                output = command_executor()
 
         copy_ok_pattern = r"\d+ bytes copied|copied.*[\[\(].*[1-9][0-9]* bytes.*[\)\]]|[Cc]opy complete|[\(\[]OK[\]\)]"
         status_match = re.search(copy_ok_pattern, output, re.IGNORECASE)
