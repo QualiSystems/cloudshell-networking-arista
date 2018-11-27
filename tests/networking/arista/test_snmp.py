@@ -68,12 +68,6 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                 'Community access: read-only\n'
                 '{}'.format(CONFIG_PROMPT),
             ),
-            Command(  # fixme duplicated check
-                'show snmp community',
-                'Community name: public\n'
-                'Community access: read-only\n'
-                '{}'.format(CONFIG_PROMPT),
-            ),
             Command('end', ENABLE_PROMPT),
         ])
         send_mock.side_effect = emu.send_line

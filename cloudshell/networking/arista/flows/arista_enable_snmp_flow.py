@@ -34,6 +34,7 @@ class AristaEnableSnmpFlow(EnableSnmpFlow):
                     else:
                         self._logger.debug("SNMP Community '{}' already configured".format(
                             snmp_parameters.snmp_community))
+                        return
 
                 self._logger.info("Start verification of SNMP config")
                 if not snmp_actions.is_configured(snmp_parameters.snmp_community):
