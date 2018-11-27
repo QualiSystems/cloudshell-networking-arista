@@ -234,27 +234,21 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
 
         emu.check_calls()
 
-    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
-    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
-    def test_enable_snmp_v3(self, send_mock, recv_mock):
+    @patch('tests.networking.arista.base_test.AristaCliHandler')
+    def test_enable_snmp_v3(self, cli_handler_mock):
+        cli_instance_mock = MagicMock()
+        cli_handler_mock.return_value = cli_instance_mock
         self._setUp({'SNMP Version': 'v3'})
-
-        # fixme we shouldn't connect to a device
-        emu = CliEmulator([
-            Command('configure terminal', CONFIG_PROMPT),
-            Command('end', ENABLE_PROMPT),
-        ])
-        send_mock.side_effect = emu.send_line
-        recv_mock.side_effect = emu.receive_all
 
         with self.assertRaisesRegexp(Exception, 'Do not support SNMP V3'):
             self.runner.discover()
 
-        emu.check_calls()
+        cli_instance_mock.get_cli_service.assert_not_called()
 
-    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
-    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
-    def test_disable_snmp_v3(self, send_mock, recv_mock):
+    @patch('tests.networking.arista.base_test.AristaCliHandler')
+    def test_disable_snmp_v3(self, cli_handler_mock):
+        cli_instance_mock = MagicMock()
+        cli_handler_mock.return_value = cli_instance_mock
         self._setUp({
             'SNMP Version': 'v3',
             'SNMP V3 Authentication Protocol': 'SHA',
@@ -263,14 +257,7 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
             'Disable SNMP': 'True',
         })
 
-        emu = CliEmulator([
-            Command('configure terminal', CONFIG_PROMPT),
-            Command('end', ENABLE_PROMPT),
-        ])
-        send_mock.side_effect = emu.send_line
-        recv_mock.side_effect = emu.receive_all
-
         with self.assertRaisesRegexp(Exception, 'Do not support SNMP V3'):
             self.runner.discover()
 
-        emu.check_calls()
+        cli_instance_mock.get_cli_service.assert_not_called()
