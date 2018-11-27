@@ -127,6 +127,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
 
         emu.check_calls()
 
+    @patch('tests.networking.arista.base_test.AristaCliHandler')
+    def test_enable_snmp_without_community(self, cli_handler_mock):
+        self._setUp({'SNMP Read Community': ''})
+
+        with self.assertRaisesRegexp(Exception, 'SNMP community cannot be empty'):
+            self.runner.discover()
+
+        cli_handler_mock.get_cli_service.assert_not_called()
+
     @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
     @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
     def test_disable_snmp_v2(self, send_mock, recv_mock):
@@ -147,6 +156,19 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
         self.runner.discover()
 
         emu.check_calls()
+
+    @patch('tests.networking.arista.base_test.AristaCliHandler')
+    def test_disable_snmp_without_community(self, cli_handler_mock):
+        self._setUp({
+            'Enable SNMP': 'False',
+            'Disable SNMP': 'True',
+            'SNMP Read Community': '',
+        })
+
+        with self.assertRaisesRegexp(Exception, 'SNMP community cannot be empty'):
+            self.runner.discover()
+
+        cli_handler_mock.get_cli_service.assert_not_called()
 
     @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
     @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
