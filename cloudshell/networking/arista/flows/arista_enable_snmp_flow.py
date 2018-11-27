@@ -18,7 +18,7 @@ class AristaEnableSnmpFlow(EnableSnmpFlow):
         self._cli_handler = cli_handler
 
     def execute_flow(self, snmp_parameters):
-        if hasattr(snmp_parameters, "snmp_community") and not snmp_parameters.snmp_community:
+        if hasattr(snmp_parameters, 'snmp_community') and not snmp_parameters.snmp_community:
             message = 'SNMP community cannot be empty'
             self._logger.error(message)
             raise Exception(self.__class__.__name__, message)
