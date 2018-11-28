@@ -9,7 +9,11 @@ class AristaSnmpHandler(SnmpHandler):
         self.cli_handler = cli_handler
 
     def _create_enable_flow(self):
-        return AristaEnableSnmpFlow(self.cli_handler, self._logger)
+        return AristaEnableSnmpFlow(
+            self.cli_handler,
+            self._logger,
+            self.resource_config.vrf_management_name,
+        )
 
     def _create_disable_flow(self):
         return AristaDisableSnmpFlow(self.cli_handler, self._logger)
