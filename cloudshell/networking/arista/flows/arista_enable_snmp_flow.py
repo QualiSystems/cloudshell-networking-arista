@@ -7,15 +7,17 @@ from cloudshell.networking.arista.command_actions.enable_disable_snmp_actions \
 
 
 class AristaEnableSnmpFlow(EnableSnmpFlow):
-    def __init__(self, cli_handler, logger):
+    def __init__(self, cli_handler, logger, vrf_name=None):
         """
         Enable snmp flow
         :param AristaCliHandler cli_handler:
         :param logger:
+        :param str vrf_name:
         :return:
         """
         super(AristaEnableSnmpFlow, self).__init__(cli_handler, logger)
         self._cli_handler = cli_handler
+        self._vrf_name = vrf_name
 
     def execute_flow(self, snmp_parameters):
         if hasattr(snmp_parameters, 'snmp_community') and not snmp_parameters.snmp_community:
@@ -29,6 +31,9 @@ class AristaEnableSnmpFlow(EnableSnmpFlow):
         with self._cli_handler.get_cli_service(self._cli_handler.enable_mode) as session:
             with session.enter_mode(self._cli_handler.config_mode) as config_session:
                 snmp_actions = EnableDisableSnmpActions(config_session, self._logger)
+
+                if self._vrf_name and not snmp_actions.is_configured_vrf(self._vrf_name):
+                    snmp_actions.enable_vrf_for_snmp_server(self._vrf_name)
 
                 if snmp_actions.is_configured(snmp_parameters.snmp_community):
                     self._logger.debug('SNMP Community "{}" already configured'.format(

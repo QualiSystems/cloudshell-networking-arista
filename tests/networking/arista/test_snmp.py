@@ -57,6 +57,93 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
 
     @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
     @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
+    def test_enable_snmp_v2_with_vrf(self, send_mock, recv_mock):
+        self._setUp({
+            'VRF Management Name': 'management',
+        })
+
+        emu = CliEmulator([
+            Command('configure terminal', CONFIG_PROMPT),
+            Command(
+                'show snmp',
+                '0 SNMP packets input\n'
+                '    0 Bad SNMP version errors\n'
+                '    0 Unknown community name\n'
+                '    0 Illegal operation for community name supplied\n'
+                '    0 Encoding errors\n'
+                '    0 Number of requested variables\n'
+                '    0 Number of altered variables\n'
+                '    0 Get-request PDUs\n'
+                '    0 Get-next PDUs\n'
+                '    0 Set-request PDUs\n'
+                '...\n'
+                'SNMP logging: disabled\n'
+                'SNMP agent enabled in VRFs: default\n'
+                '{}'.format(CONFIG_PROMPT),
+            ),
+            Command('snmp-server vrf management', CONFIG_PROMPT),
+            Command('show snmp community', CONFIG_PROMPT),
+            Command('snmp-server community public ro', CONFIG_PROMPT),
+            Command(
+                'show snmp community',
+                'Community name: public\n'
+                'Community access: read-only\n'
+                '{}'.format(CONFIG_PROMPT),
+            ),
+            Command('end', ENABLE_PROMPT),
+        ])
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        self.runner.discover()
+
+        emu.check_calls()
+
+    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
+    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
+    def test_enable_snmp_v2_with_vrf_already_enabled(self, send_mock, recv_mock):
+        self._setUp({
+            'VRF Management Name': 'management',
+        })
+
+        emu = CliEmulator([
+            Command('configure terminal', CONFIG_PROMPT),
+            Command(
+                'show snmp',
+                '0 SNMP packets input\n'
+                '    0 Bad SNMP version errors\n'
+                '    0 Unknown community name\n'
+                '    0 Illegal operation for community name supplied\n'
+                '    0 Encoding errors\n'
+                '    0 Number of requested variables\n'
+                '    0 Number of altered variables\n'
+                '    0 Get-request PDUs\n'
+                '    0 Get-next PDUs\n'
+                '    0 Set-request PDUs\n'
+                '...\n'
+                'SNMP logging: disabled\n'
+                'SNMP agent enabled in VRFs: default, management\n'
+                '{}'.format(CONFIG_PROMPT),
+            ),
+            Command('show snmp community', CONFIG_PROMPT),
+            Command('snmp-server community public ro', CONFIG_PROMPT),
+            Command(
+                'show snmp community',
+                'Community name: public\n'
+                'Community access: read-only\n'
+                '{}'.format(CONFIG_PROMPT),
+            ),
+            Command('end', ENABLE_PROMPT),
+        ])
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        self.runner.discover()
+
+        emu.check_calls()
+
+    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
+    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
     def test_enable_snmp_v2_already_enabled(self, send_mock, recv_mock):
         self._setUp()
 
