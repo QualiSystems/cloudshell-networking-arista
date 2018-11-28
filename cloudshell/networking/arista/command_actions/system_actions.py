@@ -92,17 +92,6 @@ class SystemActions(object):
                     message += error_match.group()
             raise Exception("Copy", message)
 
-    def delete_file(self, path, action_map=None, error_map=None):
-        """Delete file on the device
-
-        :param path: path to file
-        :param action_map: actions will be taken during executing commands, i.e. handles yes/no prompts
-        :param error_map: errors will be raised during executing commands, i.e. handles Invalid Commands errors
-        """
-
-        CommandTemplateExecutor(self._cli_service, configuration.DEL, action_map=action_map,
-                                error_map=error_map).execute_command(target=path)
-
     def override_running(self, path, action_map=None, error_map=None, timeout=300, reconnect_timeout=1600):
         """Override running-config
 
@@ -129,18 +118,6 @@ class SystemActions(object):
             if isinstance(e, CommandExecutionException):
                 raise
             self._cli_service.reconnect(reconnect_timeout)
-
-    def write_erase(self, action_map=None, error_map=None):
-        """Erase startup configuration
-
-        :param action_map:
-        :param error_map:
-        """
-
-        CommandTemplateExecutor(self._cli_service,
-                                configuration.WRITE_ERASE,
-                                action_map=action_map,
-                                error_map=error_map).execute_command()
 
     def reload_device(self, timeout, action_map=None, error_map=None):
         """Reload device
@@ -220,14 +197,6 @@ class SystemActions(object):
                 current_firmware.append(line.strip(" "))
 
         return current_firmware
-
-    def shutdown(self):
-        """
-        Shutdown the system
-        :return:
-        """
-
-        pass
 
 
 class FirmwareActions(object):
