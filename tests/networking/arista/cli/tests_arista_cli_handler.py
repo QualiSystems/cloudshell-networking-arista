@@ -21,11 +21,17 @@ class TestAristaSystemActions(TestCase):
 
         self.api = MagicMock()
         self.api.DecryptPassword().Value.return_value = "password"
+        self._cli = CLI()
+
+    def tearDown(self):
+        self._cli._session_pool._session_manager._existing_sessions = []
+        while not self._cli._session_pool._pool.empty():
+            self._cli._session_pool._pool.get()
 
     def get_cli_handler(self, connection_type='SSH'):
         resource_config = MagicMock()
         resource_config.cli_connection_type = connection_type
-        return AristaCliHandler(CLI(), resource_config, MagicMock(), self.api)
+        return AristaCliHandler(self._cli, resource_config, MagicMock(), self.api)
 
     def test_default_mode(self):
         cli_handler = self.get_cli_handler()
