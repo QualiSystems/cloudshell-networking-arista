@@ -28,7 +28,11 @@ class AristaDefaultCommandMode(CommandMode):
 
 
 class AristaEnableCommandMode(CommandMode):
-    PROMPT = r'(?:(?!\)).)#\s*$'
+    PROMPT = (
+        r'(\n|^)'  # new line or begin of the line
+        r'((?!\(config.*?\))(\w|-|\(|\)))*'  # \w or - or () and without (config) 
+        r'#\s*$'
+    )
     ENTER_COMMAND = 'enable'
     EXIT_COMMAND = ''
 

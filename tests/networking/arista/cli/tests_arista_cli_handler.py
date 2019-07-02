@@ -81,10 +81,19 @@ class TestAristaSystemActions(TestCase):
     @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
     def test_enter_config_mode_with_lock(self, recv_mock, cb_mock, paramiko_mock):
         cli_handler = self.get_cli_handler()
-        recv_mock.side_effect = ["Boogie#", "Boogie#", "Boogie#", "Boogie#", "Boogie#",
-                                 "Boogie#configuration Locked", "Boogie(config)#",
-                                 "Boogie(config)#", "Boogie(config)#",
-                                 "Boogie(config)#", "Boogie#", "Boogie#", "Boogie#"]
+        recv_mock.side_effect = [
+            "Boogie#",  # command None
+            "Boogie#",  # command ""
+            "Boogie#",  # "terminal length 0"
+            "Boogie#",  # "terminal width 300"
+            "Boogie#",  # "terminal no exec prompt timestamp"
+            "Boogie#configuration Locked",  # "configure terminal"
+            "\nBoogie(config)#",  # "configure terminal"
+            "Boogie(config)#",  # "no logging console"
+            "Boogie#",  # "end"
+            "Boogie#",  # ""
+            "Boogie#",  # ""
+        ]
 
         with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
             session.send_command("")
@@ -97,11 +106,22 @@ class TestAristaSystemActions(TestCase):
         locked_message = """Boogie#
         configuration Locked
         Boogie#"""
-        recv_mock.side_effect = ["Boogie#", "Boogie#", "Boogie#", "Boogie#", "Boogie#",
-                                 locked_message, locked_message,
-                                 locked_message, locked_message,
-                                 "Boogie(config)#", "Boogie(config)#",
-                                 "Boogie(config)#", "Boogie#", "Boogie#", "Boogie#"]
+        recv_mock.side_effect = [
+            "Boogie#",  # command None
+            "Boogie#",  # command ""
+            "Boogie#",  # "terminal length 0"
+            "Boogie#",  # "terminal width 300"
+            "Boogie#",  # "terminal no exec prompt timestamp"
+            locked_message,  # "configure terminal"
+            locked_message,
+            locked_message,
+            locked_message,
+            "Boogie(config)#",  # "no logging console"
+            "Boogie(config)#",  # "end"
+            "Boogie#",  # ""
+            "Boogie#",  # ""
+            "Boogie#",  # ""
+        ]
 
         with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
             session.send_command("")
@@ -138,3 +158,28 @@ class TestAristaSystemActions(TestCase):
                 session.send_command("")
         except Exception as e:
             self.assertTrue(error_message in e.args)
+
+    @patch("cloudshell.cli.session.ssh_session.paramiko", MagicMock())
+    @patch(
+        "cloudshell.cli.session.ssh_session.SSHSession._clear_buffer",
+        MagicMock(return_value="")
+    )
+    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
+    def test_enter_enable_and_config_mode_with_parentheses(self, recv_mock):
+        cli_handler = self.get_cli_handler()
+        recv_mock.side_effect = [
+            "fgs-7508-a1-2(b3)>",  # command None
+            "fgs-7508-a1-2(b3)>",  # command ""
+            "fgs-7508-a1-2(b3)#",  # command "enable"
+            "fgs-7508-a1-2(b3)#",  # "terminal length 0"
+            "fgs-7508-a1-2(b3)#",  # "terminal width 300"
+            "fgs-7508-a1-2(b3)#",  # "terminal no exec prompt timestamp"
+            "fgs-7508-a1-2(b3)(config)#",  # "configure terminal"
+            "fgs-7508-a1-2(b3)(config)#",  # "no logging console"
+            "fgs-7508-a1-2(b3)#",  # "end"
+            "fgs-7508-a1-2(b3)#",  # ""
+            "fgs-7508-a1-2(b3)#"  # ""
+        ]
+
+        with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
+            session.send_command("")
