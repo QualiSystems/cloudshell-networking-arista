@@ -29,7 +29,7 @@ class AristaDefaultCommandMode(CommandMode):
 
 class AristaEnableCommandMode(CommandMode):
     PROMPT = (
-        r'(\n|^)'  # new line or begin of the line
+        r'((?<=\n)|(?<=^))'  # new line or begin of the line that don't saved in match
         r'((?!\(config.*?\))(\w|-|\(|\)))*'  # \w or - or () and without (config) 
         r'#\s*$'
     )
