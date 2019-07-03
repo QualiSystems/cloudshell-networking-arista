@@ -3,6 +3,7 @@ from unittest import TestCase
 from cloudshell.cli.cli import CLI
 from cloudshell.cli.session.ssh_session import SSHSession
 from cloudshell.cli.session.telnet_session import TelnetSession
+from cloudshell.cli.session_manager_impl import SessionManagerException
 from mock import MagicMock, patch
 
 from cloudshell.networking.arista.cli.arista_cli_handler import \
@@ -13,6 +14,8 @@ from cloudshell.networking.arista.sessions.console_ssh_session \
     import ConsoleSSHSession
 from cloudshell.networking.arista.sessions.console_telnet_session \
     import ConsoleTelnetSession
+from tests.networking.arista.base_test import CliEmulator, Command, ENABLE_PROMPT, \
+    BaseAristaTestCase, CONFIG_PROMPT, DEFAULT_PROMPT
 
 
 class TestAristaSystemActions(TestCase):
@@ -76,110 +79,187 @@ class TestAristaSystemActions(TestCase):
         self.assertIsInstance(console_telnet, ConsoleTelnetSession)
         self.assertIsInstance(console_telnet2, ConsoleTelnetSession)
 
-    @patch("cloudshell.cli.session.ssh_session.paramiko")
-    @patch("cloudshell.cli.session.ssh_session.SSHSession._clear_buffer", return_value="")
+
+@patch("cloudshell.cli.session.ssh_session.paramiko", MagicMock())
+@patch(
+    "cloudshell.cli.session.ssh_session.SSHSession._clear_buffer",
+    MagicMock(return_value="")
+)
+@patch("cloudshell.networking.arista.cli.arista_command_modes.time", MagicMock())
+class TestCliCommandModes(BaseAristaTestCase):
+
+    def setUp(self):
+        self._setUp()
+
     @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
-    def test_enter_config_mode_with_lock(self, recv_mock, cb_mock, paramiko_mock):
-        cli_handler = self.get_cli_handler()
-        recv_mock.side_effect = [
-            "Boogie#",  # command None
-            "Boogie#",  # command ""
-            "Boogie#",  # "terminal length 0"
-            "Boogie#",  # "terminal width 300"
-            "Boogie#",  # "terminal no exec prompt timestamp"
-            "Boogie#configuration Locked",  # "configure terminal"
-            "\nBoogie(config)#",  # "configure terminal"
-            "Boogie(config)#",  # "no logging console"
-            "Boogie#",  # "end"
-            "Boogie#",  # ""
-            "Boogie#",  # ""
+    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
+    def test_enter_config_mode_with_lock(self, send_mock, recv_mock):
+        emu = CliEmulator([
+            Command(
+                "",
+                ENABLE_PROMPT,
+            )
+        ])
+        configuration_command = emu.commands[7]
+        self.assertEqual(
+            configuration_command.request,
+            "configure terminal",
+            "We have to change particular command"
+        )
+        configuration_lock_command = Command(
+            configuration_command.request,
+            "configuration locked\n{}".format(ENABLE_PROMPT),
+            configuration_command.regexp,
+        )
+
+        check_config_mode_commands = [
+            configuration_lock_command,
+            Command("", ENABLE_PROMPT),
+            configuration_command,
+            Command("", CONFIG_PROMPT)
         ]
+        emu.commands[7:8] = check_config_mode_commands
 
-        with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        with self.cli_handler.get_cli_service(self.cli_handler.enable_mode) as session:
             session.send_command("")
 
-    @patch("cloudshell.cli.session.ssh_session.paramiko")
-    @patch("cloudshell.cli.session.ssh_session.SSHSession._clear_buffer", return_value="")
+        emu.check_calls()
+
     @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
-    def test_enter_config_mode_with_multiple_retries(self, recv_mock, cb_mock, paramiko_mock):
-        cli_handler = self.get_cli_handler()
-        locked_message = """Boogie#
-        configuration Locked
-        Boogie#"""
-        recv_mock.side_effect = [
-            "Boogie#",  # command None
-            "Boogie#",  # command ""
-            "Boogie#",  # "terminal length 0"
-            "Boogie#",  # "terminal width 300"
-            "Boogie#",  # "terminal no exec prompt timestamp"
-            locked_message,  # "configure terminal"
-            locked_message,
-            locked_message,
-            locked_message,
-            "Boogie(config)#",  # "no logging console"
-            "Boogie(config)#",  # "end"
-            "Boogie#",  # ""
-            "Boogie#",  # ""
-            "Boogie#",  # ""
+    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
+    def test_enter_config_mode_with_multiple_retries(self, send_mock, recv_mock):
+        emu = CliEmulator([
+            Command(
+                "",
+                ENABLE_PROMPT,
+            )
+        ])
+        configuration_command = emu.commands[7]
+        self.assertEqual(
+            configuration_command.request,
+            "configure terminal",
+            "We have to change particular command"
+        )
+        configuration_lock_command = Command(
+            configuration_command.request,
+            "configuration locked\n{}".format(ENABLE_PROMPT),
+            configuration_command.regexp,
+        )
+
+        check_config_mode_commands = [
+            configuration_lock_command,
+            Command("", ENABLE_PROMPT),
         ]
+        check_config_mode_commands.extend(
+            [configuration_lock_command] * 3
+        )
+        check_config_mode_commands.extend([
+            configuration_command,
+            Command("", CONFIG_PROMPT)
+        ])
+        emu.commands[7:8] = check_config_mode_commands
 
-        with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        with self.cli_handler.get_cli_service(self.cli_handler.enable_mode) as session:
             session.send_command("")
 
-    @patch("cloudshell.cli.session.ssh_session.paramiko")
-    @patch("cloudshell.cli.session.ssh_session.SSHSession._clear_buffer", return_value="")
-    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
-    def test_enter_config_mode_regular(self, recv_mock, cb_mock, paramiko_mock):
-        cli_handler = self.get_cli_handler()
-        recv_mock.side_effect = ["Boogie#", "Boogie#", "Boogie#", "Boogie#", "Boogie#",
-                                 "Boogie(config)#", "Boogie(config)#",
-                                 "Boogie#", "Boogie#", "Boogie#"]
+        emu.check_calls()
 
-        with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
+    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
+    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
+    def test_enter_config_mode_regular(self, send_mock, recv_mock):
+        emu = CliEmulator([
+            Command(
+                "",
+                ENABLE_PROMPT,
+            )
+        ])
+
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        with self.cli_handler.get_cli_service(self.cli_handler.enable_mode) as session:
             session.send_command("")
 
-    @patch("cloudshell.cli.session.ssh_session.paramiko")
-    @patch("cloudshell.cli.session.ssh_session.SSHSession._clear_buffer", return_value="")
-    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
-    def test_enter_config_mode_fail(self, recv_mock, cb_mock, paramiko_mock):
-        cli_handler = self.get_cli_handler()
-        error_message = "Failed to create new session for type SSH, see logs for details"
-        locked_message = """Boogie#
-        configuration Locked
-        Boogie#"""
-        recv_mock.side_effect = ["Boogie#", "Boogie#", "Boogie#", "Boogie#", "Boogie#",
-                                 locked_message, locked_message,
-                                 locked_message, locked_message,
-                                 locked_message, locked_message,
-                                 locked_message, locked_message]
+        emu.check_calls()
 
-        try:
-            with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
+    @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
+    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
+    def test_enter_config_mode_fail(self, send_mock, recv_mock):
+        emu = CliEmulator([
+            Command(
+                "",
+                ENABLE_PROMPT,
+            )
+        ])
+        configuration_command = emu.commands[7]
+        self.assertEqual(
+            configuration_command.request,
+            "configure terminal",
+            "We have to change particular command"
+        )
+        configuration_lock_command = Command(
+            configuration_command.request,
+            "configuration locked\n{}".format(ENABLE_PROMPT),
+            configuration_command.regexp,
+        )
+
+        check_config_mode_commands = [
+            configuration_lock_command,
+            Command("", ENABLE_PROMPT),
+        ]
+        check_config_mode_commands.extend(
+            [configuration_lock_command] * 5
+        )
+        emu.commands[7:len(emu.commands) + 1] = check_config_mode_commands
+
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        with self.assertRaisesRegexp(
+                SessionManagerException,
+                "Failed to create new session for type SSH, see logs for details"
+        ):
+            with self.cli_handler.get_cli_service(
+                    self.cli_handler.enable_mode
+            ) as session:
                 session.send_command("")
-        except Exception as e:
-            self.assertTrue(error_message in e.args)
 
-    @patch("cloudshell.cli.session.ssh_session.paramiko", MagicMock())
-    @patch(
-        "cloudshell.cli.session.ssh_session.SSHSession._clear_buffer",
-        MagicMock(return_value="")
-    )
+        emu.check_calls()
+
     @patch('cloudshell.cli.session.ssh_session.SSHSession._receive_all')
-    def test_enter_enable_and_config_mode_with_parentheses(self, recv_mock):
-        cli_handler = self.get_cli_handler()
-        recv_mock.side_effect = [
-            "fgs-7508-a1-2(b3)>",  # command None
-            "fgs-7508-a1-2(b3)>",  # command ""
-            "fgs-7508-a1-2(b3)#",  # command "enable"
-            "fgs-7508-a1-2(b3)#",  # "terminal length 0"
-            "fgs-7508-a1-2(b3)#",  # "terminal width 300"
-            "fgs-7508-a1-2(b3)#",  # "terminal no exec prompt timestamp"
-            "fgs-7508-a1-2(b3)(config)#",  # "configure terminal"
-            "fgs-7508-a1-2(b3)(config)#",  # "no logging console"
-            "fgs-7508-a1-2(b3)#",  # "end"
-            "fgs-7508-a1-2(b3)#",  # ""
-            "fgs-7508-a1-2(b3)#"  # ""
-        ]
+    @patch('cloudshell.cli.session.ssh_session.SSHSession.send_line')
+    def test_enter_enable_and_config_mode_with_parentheses(self, send_mock, recv_mock):
+        default_prompt = "fgs-7508-a1-2(b3)>"
+        enable_prompt = "fgs-7508-a1-2(b3)#"
+        conf_prompt = "fgs-7508-a1-2(b3)(config)#"
 
-        with cli_handler.get_cli_service(cli_handler.enable_mode) as session:
+        prompts_map = {
+            DEFAULT_PROMPT: default_prompt,
+            ENABLE_PROMPT: enable_prompt,
+            CONFIG_PROMPT: conf_prompt
+        }
+
+        emu = CliEmulator([
+            Command(
+                "",
+                ENABLE_PROMPT,
+            )
+        ])
+
+        for command in emu.commands:
+            prompt = prompts_map.get(command.response, command.response)
+            command.response = prompt
+
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        with self.cli_handler.get_cli_service(self.cli_handler.enable_mode) as session:
             session.send_command("")
+
+        emu.check_calls()
