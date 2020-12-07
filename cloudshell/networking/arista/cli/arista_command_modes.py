@@ -28,7 +28,11 @@ class AristaDefaultCommandMode(CommandMode):
 
 
 class AristaEnableCommandMode(CommandMode):
-    PROMPT = r'(?:(?!\)).)#\s*$'
+    PROMPT = (
+        r'((?<=\n)|(?<=^))'  # new line or begin of the line that don't saved in match
+        r'((?!\(config.*?\))(\w|-|\(|\)))*'  # \w or - or () and without (config) 
+        r'#\s*$'
+    )
     ENTER_COMMAND = 'enable'
     EXIT_COMMAND = ''
 
@@ -87,7 +91,6 @@ class AristaConfigCommandMode(CommandMode):
             AristaConfigCommandMode.ENTER_COMMAND,
             AristaConfigCommandMode.EXIT_COMMAND,
             enter_action_map=self.enter_action_map(),
-
         )
 
     def enter_action_map(self):
@@ -101,15 +104,17 @@ class AristaConfigCommandMode(CommandMode):
         retry = 0
         output = session.hardware_expect("", "{0}|{1}".format(conf_prompt, enable_prompt), logger)
         while not re.search(conf_prompt, output) and retry < self.MAX_ENTER_CONFIG_MODE_RETRIES:
+            time.sleep(self.ENTER_CONFIG_RETRY_TIMEOUT)
             output = session.hardware_expect(
                 AristaConfigCommandMode.ENTER_COMMAND,
                 "{0}|{1}".format(enable_prompt, conf_prompt),
                 logger)
-            time.sleep(self.ENTER_CONFIG_RETRY_TIMEOUT)
             retry += 1
 
         if not re.search(conf_prompt, output):
             raise Exception(error_message)
+
+        session.send_line("", logger)
 
 
 class AristaVrfCommandMode(CommandMode):

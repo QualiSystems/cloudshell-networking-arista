@@ -1,5 +1,4 @@
 import re
-from collections import deque
 from unittest import TestCase
 
 from cloudshell.devices.driver_helper import get_cli
@@ -37,7 +36,7 @@ class CliEmulator(object):
     def __init__(self, commands=None):
         self.request = None
 
-        self.commands = deque([
+        self.commands = [
             Command(None, DEFAULT_PROMPT),
             Command('', DEFAULT_PROMPT),
             Command('enable', 'Password:'),
@@ -49,7 +48,7 @@ class CliEmulator(object):
             Command('no logging console', CONFIG_PROMPT),
             Command('end', ENABLE_PROMPT),
             Command('', ENABLE_PROMPT),
-        ])
+        ]
 
         if commands:
             self.commands.extend(commands)
@@ -58,7 +57,7 @@ class CliEmulator(object):
 
     def _get_response(self):
         try:
-            command = self.commands.popleft()
+            command = self.commands.pop(0)
         except IndexError:
             self.unexpected_requests.append(self.request)
             raise IndexError('Not expected requests - "{}"'.format(self.unexpected_requests))
