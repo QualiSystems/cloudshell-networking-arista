@@ -22,7 +22,7 @@ class AristaRestoreFlow(RestoreConfigurationFlow):
             copy_action_map = restore_action.prepare_action_map(path, configuration_type)
 
             if 'running' in configuration_type and restore_method == 'override':
-                restore_action.override_running(path)
+                restore_action.override_running(path, vrf_management_name)
             else:
                 restore_action.copy(
                     path, configuration_type, vrf_management_name, action_map=copy_action_map)

@@ -92,7 +92,7 @@ class SystemActions(object):
                     message += error_match.group()
             raise Exception("Copy", message)
 
-    def override_running(self, path, action_map=None, error_map=None, timeout=300, reconnect_timeout=1600):
+    def override_running(self, path, vrf=None, action_map=None, error_map=None, timeout=300, reconnect_timeout=1600):
         """Override running-config
 
         :param path: relative path to the file on the remote host tftp://server/sourcefile
@@ -101,13 +101,18 @@ class SystemActions(object):
         :raise Exception:
         """
 
+        command_template = CommandTemplateExecutor(self._cli_service,
+                                                   configuration.CONFIGURE_REPLACE,
+                                                   action_map=action_map,
+                                                   error_map=error_map,
+                                                   timeout=timeout,
+                                                   check_action_loop_detector=False)
         try:
-            output = CommandTemplateExecutor(self._cli_service,
-                                             configuration.CONFIGURE_REPLACE,
-                                             action_map=action_map,
-                                             error_map=error_map,
-                                             timeout=timeout,
-                                             check_action_loop_detector=False).execute_command(path=path)
+            if vrf:
+                with self._cli_service.enter_mode(AristaVrfCommandMode(vrf)):
+                    output = command_template.execute_command(path=path)
+            else:
+                output = command_template.execute_command(path=path)
             match_error = re.search(r'[Ee]rror.*', output, flags=re.DOTALL)
             if match_error:
                 error_str = match_error.group()
