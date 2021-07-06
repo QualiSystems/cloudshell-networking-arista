@@ -6,3 +6,5 @@ dist/
 *.egg-info/
 *.egg
 _test.py
+
+/build
