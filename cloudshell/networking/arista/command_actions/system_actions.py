@@ -44,7 +44,8 @@ class SystemActions(object):
                 source_file_name)] = lambda session, logger: session.send_line("", logger)
         host = url.get(UrlParser.HOSTNAME)
         if host:
-            action_map[r"(?!/){}(?!/)".format(host)] = lambda session, logger: session.send_line("", logger)
+            action_map[r"(?!/){}(?!/)(?!.*(\[resolving host address))".format(host)] = \
+                lambda session, logger: session.send_line("", logger)
         password = url.get(UrlParser.PASSWORD)
         if password:
             action_map[r"[Pp]assword:".format(

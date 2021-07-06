@@ -302,7 +302,8 @@ class AristaSNMPAutoload(object):
 
         output = self.snmp_service.get_property('SNMPv2-MIB', 'sysDescr', '0')
         matched = re.search(r'version\s+(?P<version>\S+)\s+', output, re.IGNORECASE)
-        return matched.groupdict().get('version', '')
+        if matched:
+            return matched.groupdict().get('version', '')
 
     def _get_device_model_name(self, device_model):
         """Get device model name from the CSV file map

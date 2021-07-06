@@ -119,19 +119,32 @@ class AristaConfigCommandMode(CommandMode):
 
 class AristaVrfCommandMode(CommandMode):
     PROMPT = r'\(vrf:{}\)#\s*$'
+    DEFAULT_VRF_NAME = 'default'
     ENTER_COMMAND = 'routing-context vrf {}'
-    EXIT_COMMAND = ENTER_COMMAND.format('default')
+    NEW_ENTER_COMMAND = 'cli vrf {}'
+    EXIT_COMMAND = ENTER_COMMAND.format(DEFAULT_VRF_NAME)
+    NEW_EXIT_COMMAND = NEW_ENTER_COMMAND.format(DEFAULT_VRF_NAME)
+    DEPRECATED_VRF_COMMAND_PATTERN = r"deprecated\s*by\s*\S*cli vrf"
 
     class _parent_mode(object):
         prompt = AristaEnableCommandMode.PROMPT
 
     def __init__(self, vrf_name):
         self.vrf_name = vrf_name
+        new_enter_command = self.NEW_ENTER_COMMAND.format(vrf_name)
 
         super(AristaVrfCommandMode, self).__init__(
             self.PROMPT.format(vrf_name),
             self.ENTER_COMMAND.format(vrf_name),
             exit_command=self.EXIT_COMMAND,
+            enter_action_map={
+                self.DEPRECATED_VRF_COMMAND_PATTERN: lambda session,
+                                                        logger: session.send_line(new_enter_command,
+                                                                                  logger)},
+            exit_action_map={
+                self.DEPRECATED_VRF_COMMAND_PATTERN: lambda session,
+                                                        logger: session.send_line(self.NEW_EXIT_COMMAND,
+                                                                                  logger)}
         )
 
         self.parent_node = self._parent_mode
