@@ -8,3 +8,6 @@ dist/
 _test.py
 
 /build
+.coverage
+.tox/
+build/
