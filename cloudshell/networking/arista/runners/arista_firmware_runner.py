@@ -1,6 +1,8 @@
 from cloudshell.devices.runners.firmware_runner import FirmwareRunner
 
-from cloudshell.networking.arista.flows.arista_load_firmware_flow import AristaLoadFirmwareFlow
+from cloudshell.networking.arista.flows.arista_load_firmware_flow import (
+    AristaLoadFirmwareFlow,
+)
 
 
 class AristaFirmwareRunner(FirmwareRunner):

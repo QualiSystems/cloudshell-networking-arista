@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.9.1
+    hooks:
+      - id: isort
+        exclude: '/mibs'
+        language_version: python3.7
+  - repo: https://github.com/python/black
+    rev: 21.6b0
+    hooks:
+      - id: black
+        exclude: '/mibs'
+        language_version: python3.7
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        exclude: '/mibs'
+        language_version: python3.7
+        additional_dependencies: [
+          flake8-docstrings,
+          flake8-builtins,
+          flake8-comprehensions,
+          flake8-print,
+          flake8-eradicate,
+        ]

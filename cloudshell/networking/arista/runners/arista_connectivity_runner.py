@@ -1,7 +1,9 @@
 from cloudshell.devices.runners.connectivity_runner import ConnectivityRunner
 
 from cloudshell.networking.arista.flows.arista_add_vlan_flow import AristaAddVlanFlow
-from cloudshell.networking.arista.flows.arista_remove_vlan_flow import AristaRemoveVlanFlow
+from cloudshell.networking.arista.flows.arista_remove_vlan_flow import (
+    AristaRemoveVlanFlow,
+)
 
 
 class AristaConnectivityRunner(ConnectivityRunner):

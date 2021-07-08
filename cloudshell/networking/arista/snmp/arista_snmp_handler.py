@@ -1,6 +1,11 @@
-from cloudshell.networking.arista.flows.arista_disable_snmp_flow import AristaDisableSnmpFlow
-from cloudshell.networking.arista.flows.arista_enable_snmp_flow import AristaEnableSnmpFlow
 from cloudshell.devices.snmp_handler import SnmpHandler
+
+from cloudshell.networking.arista.flows.arista_disable_snmp_flow import (
+    AristaDisableSnmpFlow,
+)
+from cloudshell.networking.arista.flows.arista_enable_snmp_flow import (
+    AristaEnableSnmpFlow,
+)
 
 
 class AristaSnmpHandler(SnmpHandler):
