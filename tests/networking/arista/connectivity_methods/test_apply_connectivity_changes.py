@@ -2,15 +2,19 @@ from unittest import TestCase
 
 from mock import MagicMock, patch
 
-from cloudshell.networking.arista.runners.arista_connectivity_runner import AristaConnectivityRunner
+from cloudshell.networking.arista.runners.arista_connectivity_runner import (
+    AristaConnectivityRunner,
+)
 
 
 class TestAristaConnectivityOperations(TestCase):
     def setUp(self):
         self.handler = AristaConnectivityRunner(MagicMock(), MagicMock())
 
-    @patch("cloudshell.networking.arista.runners.arista_connectivity_runner."
-           "AristaConnectivityRunner.remove_vlan_flow")
+    @patch(
+        "cloudshell.networking.arista.runners.arista_connectivity_runner."
+        "AristaConnectivityRunner.remove_vlan_flow"
+    )
     def test_remove_vlan_triggered(self, rem_vlan_mock):
         rem_vlan_exec_flow_mock = MagicMock(return_value="")
         rem_vlan_mock.execute_flow = rem_vlan_exec_flow_mock
@@ -18,14 +22,16 @@ class TestAristaConnectivityOperations(TestCase):
         self.handler.apply_connectivity_changes(request)
         rem_vlan_exec_flow_mock.assert_called_once()
 
-    @patch("cloudshell.networking.arista.runners.arista_connectivity_runner."
-           "AristaConnectivityRunner.add_vlan_flow")
+    @patch(
+        "cloudshell.networking.arista.runners.arista_connectivity_runner."
+        "AristaConnectivityRunner.add_vlan_flow"
+    )
     def test_add_vlan_triggered(self, add_vlan_mock):
-            add_vlan_exec_flow_mock = MagicMock(return_value="")
-            add_vlan_mock.execute_flow = add_vlan_exec_flow_mock
-            request = self._get_request().replace("vlan_config_type", "setVlan")
-            self.handler.apply_connectivity_changes(request)
-            add_vlan_exec_flow_mock.assert_called_once()
+        add_vlan_exec_flow_mock = MagicMock(return_value="")
+        add_vlan_mock.execute_flow = add_vlan_exec_flow_mock
+        request = self._get_request().replace("vlan_config_type", "setVlan")
+        self.handler.apply_connectivity_changes(request)
+        add_vlan_exec_flow_mock.assert_called_once()
 
     @staticmethod
     def _get_request():
@@ -80,4 +86,4 @@ class TestAristaConnectivityOperations(TestCase):
                 }
             ]
         }
-        }"""
+        }"""  # noqa: E501

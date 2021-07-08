@@ -1,6 +1,9 @@
 import re
+
 from cloudshell.networking.arista.autoload.snmp_if_entity import SnmpIfEntity
-from cloudshell.networking.arista.autoload.snmp_port_attr_tables import SnmpPortAttrTables
+from cloudshell.networking.arista.autoload.snmp_port_attr_tables import (
+    SnmpPortAttrTables,
+)
 
 
 class SnmpIfTable(object):
@@ -10,7 +13,7 @@ class SnmpIfTable(object):
         self._snmp = snmp_handler
         self._logger = logger
         self._load_snmp_tables()
-        self._if_entities_dict = dict()
+        self._if_entities_dict = {}
         self.port_attributes_snmp_tables = SnmpPortAttrTables(snmp_handler, logger)
 
     @property
@@ -26,25 +29,32 @@ class SnmpIfTable(object):
 
     def _get_if_entities(self):
         for index in self._if_table.keys():
-            self._if_entities_dict[index] = SnmpIfEntity(snmp_handler=self._snmp, logger=self._logger,
-                                                         index=index,
-                                                         port_attributes_snmp_tables=self.port_attributes_snmp_tables)
+            self._if_entities_dict[index] = SnmpIfEntity(
+                snmp_handler=self._snmp,
+                logger=self._logger,
+                index=index,
+                port_attributes_snmp_tables=self.port_attributes_snmp_tables,
+            )
 
     def _load_snmp_tables(self):
-        """ Load all arista required snmp tables"""
-
-        self._logger.info('Start loading MIB tables:')
-        self._if_table = self._snmp.get_table('IF-MIB', self.IF_ENTITY)
-        self._logger.info('ifIndex table loaded')
-        self._logger.info('MIB Tables loaded successfully')
+        """Load all arista required snmp tables."""
+        self._logger.info("Start loading MIB tables:")
+        self._if_table = self._snmp.get_table("IF-MIB", self.IF_ENTITY)
+        self._logger.info("ifIndex table loaded")
+        self._logger.info("MIB Tables loaded successfully")
 
     def get_if_index_from_port_name(self, port_name, port_filter_list):
-        port_if_re = re.findall('\d+', port_name)
+        port_if_re = re.findall(r"\d+", port_name)
         if port_if_re:
             if_table_re = "/".join(port_if_re)
             for interface in self.if_entities:
                 if not re.search("ethernet|other", interface.if_type, re.IGNORECASE):
                     continue
-                if re.search(r"^(?!.*null|.*{0})\D*{1}(/\D+|$)".format(port_filter_list, if_table_re),
-                             interface.if_name, re.IGNORECASE):
+                if re.search(
+                    r"^(?!.*null|.*{0})\D*{1}(/\D+|$)".format(
+                        port_filter_list, if_table_re
+                    ),
+                    interface.if_name,
+                    re.IGNORECASE,
+                ):
                     return interface

@@ -1,6 +1,8 @@
 from cloudshell.devices.flows.snmp_action_flows import AutoloadFlow
 
-from cloudshell.networking.arista.autoload.arista_snmp_autoload import AristaSNMPAutoload
+from cloudshell.networking.arista.autoload.arista_snmp_autoload import (
+    AristaSNMPAutoload,
+)
 
 
 class AristaAutoloadFlow(AutoloadFlow):
@@ -8,6 +10,7 @@ class AristaAutoloadFlow(AutoloadFlow):
         with self._snmp_handler.get_snmp_service() as snmp_service:
 
             arista_snmp_autoload = AristaSNMPAutoload(
-                snmp_service, shell_name, shell_type, resource_name, self._logger)
+                snmp_service, shell_name, shell_type, resource_name, self._logger
+            )
 
             return arista_snmp_autoload.discover(supported_os)

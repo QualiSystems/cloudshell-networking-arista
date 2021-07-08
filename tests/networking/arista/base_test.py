@@ -1,21 +1,25 @@
 import re
 from unittest import TestCase
 
+from mock import MagicMock, create_autospec
+
 from cloudshell.devices.driver_helper import get_cli
-from cloudshell.devices.standards.networking.configuration_attributes_structure import \
-    create_networking_resource_from_context
-from cloudshell.shell.core.driver_context import ResourceCommandContext, ResourceContextDetails
-from mock import create_autospec, MagicMock
+from cloudshell.devices.standards.networking.configuration_attributes_structure import (
+    create_networking_resource_from_context,
+)
+from cloudshell.shell.core.driver_context import (
+    ResourceCommandContext,
+    ResourceContextDetails,
+)
 
 from cloudshell.networking.arista.cli.arista_cli_handler import AristaCliHandler
 
+DEFAULT_PROMPT = "Arista>"
+ENABLE_PROMPT = "Arista#"
+CONFIG_PROMPT = "Arista(config)#"
+VRF_PROMPT = "Arista(vrf:{vrf_name})#"
 
-DEFAULT_PROMPT = 'Arista>'
-ENABLE_PROMPT = 'Arista#'
-CONFIG_PROMPT = 'Arista(config)#'
-VRF_PROMPT = 'Arista(vrf:{vrf_name})#'
-
-ENABLE_PASSWORD = 'enable_password'
+ENABLE_PASSWORD = "enable_password"
 
 
 class Command(object):
@@ -25,11 +29,17 @@ class Command(object):
         self.regexp = regexp
 
     def is_equal_to_request(self, request):
-        return (not self.regexp and self.request == request
-                or self.regexp and re.search(self.request, request))
+        return (
+            not self.regexp
+            and self.request == request
+            or self.regexp
+            and re.search(self.request, request)
+        )
 
     def __repr__(self):
-        return 'Command({!r}, {!r}, {!r})'.format(self.request, self.response, self.regexp)
+        return "Command({!r}, {!r}, {!r})".format(
+            self.request, self.response, self.regexp
+        )
 
 
 class CliEmulator(object):
@@ -38,16 +48,16 @@ class CliEmulator(object):
 
         self.commands = [
             Command(None, DEFAULT_PROMPT),
-            Command('', DEFAULT_PROMPT),
-            Command('enable', 'Password:'),
+            Command("", DEFAULT_PROMPT),
+            Command("enable", "Password:"),
             Command(ENABLE_PASSWORD, ENABLE_PROMPT),
-            Command('terminal length 0', ENABLE_PROMPT),
-            Command('terminal width 300', ENABLE_PROMPT),
-            Command('terminal no exec prompt timestamp', ENABLE_PROMPT),
-            Command('configure terminal', CONFIG_PROMPT),
-            Command('no logging console', CONFIG_PROMPT),
-            Command('end', ENABLE_PROMPT),
-            Command('', ENABLE_PROMPT),
+            Command("terminal length 0", ENABLE_PROMPT),
+            Command("terminal width 300", ENABLE_PROMPT),
+            Command("terminal no exec prompt timestamp", ENABLE_PROMPT),
+            Command("configure terminal", CONFIG_PROMPT),
+            Command("no logging console", CONFIG_PROMPT),
+            Command("end", ENABLE_PROMPT),
+            Command("", ENABLE_PROMPT),
         ]
 
         if commands:
@@ -60,12 +70,16 @@ class CliEmulator(object):
             command = self.commands.pop(0)
         except IndexError:
             self.unexpected_requests.append(self.request)
-            raise IndexError('Not expected requests - "{}"'.format(self.unexpected_requests))
+            raise IndexError(
+                'Not expected requests - "{}"'.format(self.unexpected_requests)
+            )
 
         if not command.is_equal_to_request(self.request):
             self.unexpected_requests.append(self.request)
-            raise KeyError('Unexpected request - "{}"\n'
-                           'Expected - "{}"'.format(self.unexpected_requests, command.request))
+            raise KeyError(
+                'Unexpected request - "{}"\n'
+                'Expected - "{}"'.format(self.unexpected_requests, command.request)
+            )
 
         if isinstance(command.response, Exception):
             raise command.response
@@ -80,34 +94,36 @@ class CliEmulator(object):
 
     def check_calls(self):
         if self.commands:
-            commands = '\n'.join('\t\t- {}'.format(command.request) for command in self.commands)
-            raise ValueError('Not executed commands: \n{}'.format(commands))
+            commands = "\n".join(
+                "\t\t- {}".format(command.request) for command in self.commands
+            )
+            raise ValueError("Not executed commands: \n{}".format(commands))
 
 
 class BaseAristaTestCase(TestCase):
-    SHELL_NAME = ''
+    SHELL_NAME = ""
 
     def create_context(self, attrs=None):
         context = create_autospec(ResourceCommandContext)
         context.resource = create_autospec(ResourceContextDetails)
-        context.resource.name = 'Arista'
-        context.resource.fullname = 'Arista'
-        context.resource.family = 'CS_Router'
-        context.resource.address = 'host'
+        context.resource.name = "Arista"
+        context.resource.fullname = "Arista"
+        context.resource.family = "CS_Router"
+        context.resource.address = "host"
         context.resource.attributes = {}
 
         attributes = {
-            'User': 'admin',
-            'Password': 'password',
-            'Enable Password': ENABLE_PASSWORD,
-            'host': 'host',
-            'CLI Connection Type': 'ssh',
-            'Sessions Concurrency Limit': '1',
+            "User": "admin",
+            "Password": "password",
+            "Enable Password": ENABLE_PASSWORD,
+            "host": "host",
+            "CLI Connection Type": "ssh",
+            "Sessions Concurrency Limit": "1",
         }
         attributes.update(attrs or {})
 
         for key, val in attributes.items():
-            context.resource.attributes['{}{}'.format(self.SHELL_NAME, key)] = val
+            context.resource.attributes["{}{}".format(self.SHELL_NAME, key)] = val
 
         return context
 
@@ -116,13 +132,16 @@ class BaseAristaTestCase(TestCase):
             attrs = {}
 
         self.resource_config = create_networking_resource_from_context(
-            self.SHELL_NAME, ['EOS'], self.create_context(attrs))
+            self.SHELL_NAME, ["EOS"], self.create_context(attrs)
+        )
         self._cli = get_cli(int(self.resource_config.sessions_concurrency_limit))
 
         self.logger = MagicMock()
         self.api = MagicMock(DecryptPassword=lambda password: MagicMock(Value=password))
 
-        self.cli_handler = AristaCliHandler(self._cli, self.resource_config, self.logger, self.api)
+        self.cli_handler = AristaCliHandler(
+            self._cli, self.resource_config, self.logger, self.api
+        )
 
     def tearDown(self):
         self._cli._session_pool._session_manager._existing_sessions = []
