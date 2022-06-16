@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from cloudshell.networking.arista.cli.arista_cli_configurator import AristaCLIConfigurator
+from cloudshell.networking.arista.command_actions.system_actions import SystemActions
+from cloudshell.shell.flows.configuration.basic_flow import AbstractConfigurationFlow, ConfigurationType, RestoreMethod
+
+if TYPE_CHECKING:
+    from logging import Logger
+    from cloudshell.shell.standards.networking.resource_config import NetworkingResourceConfig
+
+
+class AristaConfigurationFlow(AbstractConfigurationFlow):
+    SUPPORTED_CONFIGURATION_TYPES = {ConfigurationType.RUNNING}
+    SUPPORTED_RESTORE_METHODS = {RestoreMethod.OVERRIDE}
+
+    def __init__(
+        self,
+        logger: Logger,
+        resource_config: NetworkingResourceConfig,
+        cli_configurator: AristaCLIConfigurator,
+    ):
+        super().__init__(logger, resource_config)
+        self._cli_configurator = cli_configurator
+
+    @property
+    def file_system(self) -> str:
+        return "flash:"
+
+    def _save_flow(self, file_dst_url: AbstractConfigurationFlow.REMOTE_URL_CLASS | AbstractConfigurationFlow.LOCAL_URL_CLASS, configuration_type: ConfigurationType,
+                   vrf_management_name: str | None) -> str | None:
+        with self._cli_configurator.enable_mode_service() as enable_session:
+            save_action = SystemActions(enable_session, self._logger)
+            action_map = save_action.prepare_action_map(configuration_type.value, str(file_dst_url))
+            save_action.copy(
+                configuration_type.value,
+                str(file_dst_url),
+                vrf=vrf_management_name,
+                action_map=action_map,
+            )
+
+    def _restore_flow(self, config_path: AbstractConfigurationFlow.REMOTE_URL_CLASS | AbstractConfigurationFlow.LOCAL_URL_CLASS, configuration_type: ConfigurationType,
+                      restore_method: RestoreMethod, vrf_management_name: str | None) -> None:
+        conf_type = configuration_type.value+"-config"
+        path = str(config_path)
+
+        with self._cli_configurator.enable_mode_service() as enable_session:
+            restore_action = SystemActions(enable_session, self._logger)
+            copy_action_map = restore_action.prepare_action_map(
+                path, conf_type
+            )
+
+            if "running" in conf_type and restore_method == RestoreMethod.OVERRIDE:
+                restore_action.override_running(path, vrf_management_name)
+            else:
+                restore_action.copy(
+                    path,
+                    conf_type,
+                    vrf_management_name,
+                    action_map=copy_action_map,
+                )

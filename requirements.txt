@@ -1,2 +1,5 @@
-cloudshell-networking-devices>=2.4,<2.5
-cloudshell-networking>=5.1,<5.2
+cloudshell-snmp~=4.0
+cloudshell-snmp-autoload~=1.0
+cloudshell-cli~=4.0
+cloudshell-shell-connectivity-flow~=3.0
+cloudshell-shell-flows~=2.0

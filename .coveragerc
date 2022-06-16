@@ -1,4 +1,7 @@
 [report]
 omit =
     */mibs/*
-    *__init__*
+    *exceptions*
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:

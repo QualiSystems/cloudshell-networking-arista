@@ -1,7 +1,7 @@
 import re
 import time
 
-from cloudshell.cli.command_mode import CommandMode
+from cloudshell.cli.service.command_mode import CommandMode
 
 
 class AristaDefaultCommandMode(CommandMode):

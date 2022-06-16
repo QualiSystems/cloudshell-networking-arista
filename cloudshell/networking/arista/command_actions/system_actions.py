@@ -1,5 +1,7 @@
+from __future__ import annotations
 import re
 from collections import OrderedDict
+from typing import TYPE_CHECKING
 
 from cloudshell.cli.command_template.command_template_executor import (
     CommandTemplateExecutor,
@@ -8,29 +10,32 @@ from cloudshell.cli.session.session_exceptions import (
     CommandExecutionException,
     ExpectedSessionException,
 )
-from cloudshell.devices.networking_utils import UrlParser
-
 from cloudshell.networking.arista.cli.arista_command_modes import AristaVrfCommandMode
 from cloudshell.networking.arista.command_templates import configuration, firmware
 
+if TYPE_CHECKING:
+    from cloudshell.shell.flows.utils.url import RemoteURL, BasicLocalUrl
+    from cloudshell.cli.service.cli_service import CliService
+    from typing import Dict, Any
+    from logging import Logger
+
 
 class SystemActions(object):
-    def __init__(self, cli_service, logger):
+    def __init__(self, cli_service: CliService, logger: Logger):
         """Reboot actions.
 
-        :param cloudshell.cli.cli_service.CliService cli_service: default mode
+        :param cli_service: default mode
         :param logger:
         """
         self._cli_service = cli_service
         self._logger = logger
 
     @staticmethod
-    def prepare_action_map(source_file, destination_file):
+    def prepare_action_map(source_file: RemoteURL | BasicLocalUrl, destination_file: RemoteURL | BasicLocalUrl) -> Dict[str, Any]:
         action_map = OrderedDict()
-        if "://" in destination_file:
-            url = UrlParser.parse_url(destination_file)
-            dst_file_name = url.get(UrlParser.FILENAME)
-            source_file_name = UrlParser.parse_url(source_file).get(UrlParser.FILENAME)
+        if isinstance(destination_file, RemoteURL):
+            dst_file_name = destination_file.filename
+            source_file_name = source_file.filename
             action_map[
                 r"[\[\(].*{}[\)\]]".format(dst_file_name)
             ] = lambda session, logger: session.send_line("", logger)
@@ -38,25 +43,24 @@ class SystemActions(object):
             action_map[
                 r"[\[\(]{}[\)\]]".format(source_file_name)
             ] = lambda session, logger: session.send_line("", logger)
+            host = destination_file.host
+            password = destination_file.password
         else:
-            destination_file_name = UrlParser.parse_url(destination_file).get(
-                UrlParser.FILENAME
-            )
-            url = UrlParser.parse_url(source_file)
+            destination_file_name = destination_file.filename
 
-            source_file_name = url.get(UrlParser.FILENAME)
+            source_file_name = source_file.filename
             action_map[
                 r"(?!/)[\[\(]{}[\)\]]".format(destination_file_name)
             ] = lambda session, logger: session.send_line("", logger)
             action_map[
                 r"(?!/)[\[\(]{}[\)\]]".format(source_file_name)
             ] = lambda session, logger: session.send_line("", logger)
-        host = url.get(UrlParser.HOSTNAME)
+            host = source_file.host
+            password = source_file.password
         if host:
             action_map[
                 r"(?!/){}(?!/)(?!.*(\[resolving host address))".format(host)
             ] = lambda session, logger: session.send_line("", logger)
-        password = url.get(UrlParser.PASSWORD)
         if password:
             action_map[r"[Pp]assword:"] = lambda session, logger: session.send_line(
                 password, logger
