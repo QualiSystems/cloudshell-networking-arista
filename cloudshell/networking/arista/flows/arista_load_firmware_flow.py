@@ -1,89 +1,84 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+from __future__ import annotations
 import re
+from logging import Logger
 
-from cloudshell.devices.flows.action_flows import LoadFirmwareFlow
-from cloudshell.devices.networking_utils import UrlParser
-
+from cloudshell.networking.arista.cli.arista_cli_configurator import AristaCLIConfigurator
 from cloudshell.networking.arista.command_actions.system_actions import (
     FirmwareActions,
     SystemActions,
 )
+from cloudshell.shell.flows.firmware.basic_flow import AbstractFirmwareFlow
+from cloudshell.shell.flows.utils.url import RemoteURL, BasicLocalUrl
+from cloudshell.shell.standards.networking.resource_config import NetworkingResourceConfig
 
 
-class AristaLoadFirmwareFlow(LoadFirmwareFlow):
+class AristaLoadFirmwareFlow(AbstractFirmwareFlow):
     RUNNING_CONFIG = "running-config"
     STARTUP_CONFIG = "startup-config"
     BOOTFOLDER = ["bootflash:", "bootdisk:"]
     FLASH = "flash:"
     KICKSTART_IMAGE = "kickstart"
 
-    def __init__(self, cli_handler, logger, default_file_system=None):
-        super(AristaLoadFirmwareFlow, self).__init__(cli_handler, logger)
-        self._file_system = default_file_system or self.FLASH
+    def __init__(
+        self,
+        logger: Logger,
+        resource_config: NetworkingResourceConfig,
+        cli_configurator: AristaCLIConfigurator,
+    ):
+        super().__init__(logger, resource_config)
+        self._cli_configurator = cli_configurator
 
-    def execute_flow(self, path, vrf, timeout):
-        """Load a firmware onto the device.
-
-        :param path: The path to the firmware file, including the firmware file name
-        :param vrf: Virtual Routing and Forwarding Name
-        :param timeout:
-        """
-        full_path_dict = UrlParser().parse_url(path)
-        firmware_file_name = full_path_dict.get(UrlParser.FILENAME)
+    def _load_firmware_flow(self, firmware_url: RemoteURL | BasicLocalUrl, vrf_management_name: str | None,
+                            timeout: int) -> None:
+        firmware_file_name = firmware_url.filename
         if not firmware_file_name:
             raise Exception(self.__class__.__name__, "Unable to find firmware file")
 
-        with self._cli_handler.get_cli_service(
-            self._cli_handler.enable_mode
-        ) as enable_session:
+        with self._cli_configurator.enable_mode_service() as enable_session:
             system_action = SystemActions(enable_session, self._logger)
-            dst_file_system = self._file_system
+            dst_file_system = self.FLASH
 
-            firmware_dst_path = "{0}/{1}".format(dst_file_system, firmware_file_name)
+            firmware_dst_path = f"{dst_file_system}/{firmware_file_name}"
 
             device_file_system = system_action.get_flash_folders_list()
-            self._logger.info("Discovered folders: {}".format(device_file_system))
+            self._logger.info(f"Discovered folders: {device_file_system}")
             if device_file_system:
                 device_file_system.sort()
                 for flash in device_file_system:
                     if flash in self.BOOTFOLDER:
-                        self._logger.info("Device has a {} folder".format(flash))
-                        firmware_dst_path = "{0}/{1}".format(flash, firmware_file_name)
-                        self._logger.info("Copying {} image".format(firmware_dst_path))
+                        self._logger.info(f"Device has a {flash} folder")
+                        firmware_dst_path = f"{flash}/{firmware_file_name}"
+                        self._logger.info(f"Copying {firmware_dst_path} image")
                         system_action.copy(
-                            path,
+                            str(firmware_url),
                             firmware_dst_path,
-                            vrf=vrf,
+                            vrf=vrf_management_name,
                             action_map=system_action.prepare_action_map(
-                                path, firmware_dst_path
+                                firmware_url, BasicLocalUrl.from_str(firmware_dst_path)
                             ),
                         )
                         break
                     if "flash-" in flash:
-                        firmware_dst_file_path = "{0}/{1}".format(
-                            flash, firmware_file_name
-                        )
-                        self._logger.info(
-                            "Copying {} image".format(firmware_dst_file_path)
-                        )
+                        firmware_dst_file_path = f"{flash}/{firmware_file_name}"
+                        self._logger.info(f"Copying {firmware_dst_file_path} image")
                         system_action.copy(
-                            path,
+                            str(firmware_url),
                             firmware_dst_file_path,
-                            vrf=vrf,
+                            vrf=vrf_management_name,
                             action_map=system_action.prepare_action_map(
-                                path, firmware_dst_file_path
+                                firmware_url, BasicLocalUrl.from_str(firmware_dst_file_path)
                             ),
                         )
             else:
-                self._logger.info("Copying {} image".format(firmware_dst_path))
+                self._logger.info(f"Copying {firmware_dst_path} image")
                 system_action.copy(
-                    path,
+                    str(firmware_url),
                     firmware_dst_path,
-                    vrf=vrf,
+                    vrf=vrf_management_name,
                     action_map=system_action.prepare_action_map(
-                        path, firmware_dst_path
+                        firmware_url, BasicLocalUrl.from_str(firmware_dst_path)
                     ),
                 )
 
@@ -109,9 +104,9 @@ class AristaLoadFirmwareFlow(LoadFirmwareFlow):
             system_action.copy(
                 self.RUNNING_CONFIG,
                 self.STARTUP_CONFIG,
-                vrf=vrf,
+                vrf=vrf_management_name,
                 action_map=system_action.prepare_action_map(
-                    self.RUNNING_CONFIG, self.STARTUP_CONFIG
+                    BasicLocalUrl.from_str(self.RUNNING_CONFIG), BasicLocalUrl.from_str(self.STARTUP_CONFIG)
                 ),
             )
             if "CONSOLE" in enable_session.session.SESSION_TYPE:
@@ -132,7 +127,7 @@ class AristaLoadFirmwareFlow(LoadFirmwareFlow):
             self.KICKSTART_IMAGE in firmware_dst_path.split("/")[-1].lower()
         )
 
-        with enable_session.enter_mode(self._cli_handler.config_mode) as config_session:
+        with enable_session.enter_mode(self._cli_configurator.config_mode) as config_session:
             firmware_action = FirmwareActions(config_session, self._logger)
             for boot_conf in current_boot:
                 if is_kickstart_image:

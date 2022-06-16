@@ -1,16 +1,33 @@
-from cloudshell.devices.flows.snmp_action_flows import AutoloadFlow
+from __future__ import annotations
+import os
+from logging import Logger
+from typing import TYPE_CHECKING
 
-from cloudshell.networking.arista.autoload.arista_snmp_autoload import (
-    AristaSNMPAutoload,
-)
+from cloudshell.shell.core.driver_context import AutoLoadDetails
+from cloudshell.shell.flows.autoload.basic_flow import AbstractAutoloadFlow
+from cloudshell.snmp.autoload.generic_snmp_autoload import GenericSNMPAutoload
+from cloudshell.snmp.snmp_configurator import EnableDisableSnmpConfigurator
 
 
-class AristaAutoloadFlow(AutoloadFlow):
-    def execute_flow(self, supported_os, shell_name, shell_type, resource_name):
-        with self._snmp_handler.get_snmp_service() as snmp_service:
+if TYPE_CHECKING:
+    from typing import List
+    from cloudshell.shell.standards.networking.autoload_model import (
+        NetworkingResourceModel,
+    )
 
-            arista_snmp_autoload = AristaSNMPAutoload(
-                snmp_service, shell_name, shell_type, resource_name, self._logger
-            )
 
-            return arista_snmp_autoload.discover(supported_os)
+class AristaAutoloadFlow(AbstractAutoloadFlow):
+    def __init__(
+        self, snmp_configurator: EnableDisableSnmpConfigurator, logger: Logger,
+    ):
+        super().__init__(logger)
+        self._snmp_configurator = snmp_configurator
+
+    def _autoload_flow(
+        self, supported_os: List[str],
+            resource_model: NetworkingResourceModel
+    ) -> AutoLoadDetails:
+        with self._snmp_configurator.get_service() as snmp_service:
+            autoload_handler = GenericSNMPAutoload(snmp_service, self._logger)
+            snmp_service.add_mib_folder_path(os.path.join(os.path.dirname(__file__), "..", "snmp", "mibs"))
+            return autoload_handler.discover(supported_os, resource_model)

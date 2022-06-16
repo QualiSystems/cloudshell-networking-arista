@@ -5,6 +5,7 @@ from cloudshell.cli.session.telnet_session import TelnetSession
 
 class ConsoleTelnetSession(TelnetSession):
     SESSION_TYPE = "CONSOLE_TELNET"
+    _START_WITH_NEW_LINE=False
 
     def __init__(
         self,
@@ -13,7 +14,6 @@ class ConsoleTelnetSession(TelnetSession):
         password,
         port=None,
         on_session_start=None,
-        start_with_new_line=None,
         *args,
         **kwargs
     ):
@@ -27,7 +27,6 @@ class ConsoleTelnetSession(TelnetSession):
             *args,
             **kwargs
         )
-        self._start_with_new_line = start_with_new_line
 
     def _connect_actions(self, prompt, logger):
         """Open connection to device / create session.
@@ -51,7 +50,7 @@ class ConsoleTelnetSession(TelnetSession):
 
         action_map[empty_key] = empty_action
         cmd = None
-        if self._start_with_new_line:
+        if self._START_WITH_NEW_LINE:
             cmd = ""
         self.hardware_expect(
             cmd,
@@ -61,3 +60,7 @@ class ConsoleTelnetSession(TelnetSession):
             action_map=action_map,
         )
         self._on_session_start(logger)
+
+
+class ConsoleTelnetSessionNewLine(ConsoleTelnetSession):
+    _START_WITH_NEW_LINE = True

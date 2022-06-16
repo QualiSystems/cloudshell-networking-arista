@@ -1,4 +1,6 @@
+from __future__ import annotations
 import re
+from typing import TYPE_CHECKING
 
 from cloudshell.cli.command_template.command_template_executor import (
     CommandTemplateExecutor,
@@ -11,14 +13,14 @@ from cloudshell.networking.arista.command_templates import (
     iface as iface_command_template,
 )
 
+if TYPE_CHECKING:
+    from logging import Logger
+    from cloudshell.cli.service.cli_service import CliService
+
 
 class AddRemoveVlanActions(object):
-    def __init__(self, cli_service, logger):
-        """Add remove vlan.
-
-        :param cloudshell.cli.cli_service.CliService cli_service: config mode
-        :param logger:
-        """
+    def __init__(self, cli_service: CliService, logger: Logger):
+        """Add remove vlan."""
         self._cli_service = cli_service
         self._logger = logger
 
