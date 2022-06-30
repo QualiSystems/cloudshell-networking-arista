@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import re
 from collections import OrderedDict
 from typing import TYPE_CHECKING
@@ -10,17 +11,22 @@ from cloudshell.cli.session.session_exceptions import (
     CommandExecutionException,
     ExpectedSessionException,
 )
-from cloudshell.networking.arista.cli.arista_command_modes import AristaVrfCommandMode
-from cloudshell.networking.arista.command_templates import configuration, firmware
+from cloudshell.shell.flows.utils.url import RemoteURL
+
+from ..cli.arista_command_modes import AristaVrfCommandMode
+from ..command_templates import configuration, firmware
 
 if TYPE_CHECKING:
-    from cloudshell.shell.flows.utils.url import RemoteURL, BasicLocalUrl
-    from cloudshell.cli.service.cli_service import CliService
-    from typing import Dict, Any
     from logging import Logger
+    from typing import Any, Union
+
+    from cloudshell.cli.service.cli_service import CliService
+    from cloudshell.shell.flows.utils.url import BasicLocalUrl
+
+    Url = Union[RemoteURL, BasicLocalUrl]
 
 
-class SystemActions(object):
+class SystemActions:
     def __init__(self, cli_service: CliService, logger: Logger):
         """Reboot actions.
 
@@ -31,35 +37,38 @@ class SystemActions(object):
         self._logger = logger
 
     @staticmethod
-    def prepare_action_map(source_file: RemoteURL | BasicLocalUrl, destination_file: RemoteURL | BasicLocalUrl) -> Dict[str, Any]:
+    def prepare_action_map(
+        source_file: Url,
+        destination_file: Url,
+    ) -> dict[str, Any]:
         action_map = OrderedDict()
         if isinstance(destination_file, RemoteURL):
             dst_file_name = destination_file.filename
             source_file_name = source_file.filename
             action_map[
-                r"[\[\(].*{}[\)\]]".format(dst_file_name)
+                rf"[\[\(].*{dst_file_name}[\)\]]"
             ] = lambda session, logger: session.send_line("", logger)
 
             action_map[
-                r"[\[\(]{}[\)\]]".format(source_file_name)
+                rf"[\[\(]{source_file_name}[\)\]]"
             ] = lambda session, logger: session.send_line("", logger)
-            host = destination_file.host
-            password = destination_file.password
+            host = getattr(destination_file, "host", None)
+            password = getattr(destination_file, "password", None)
         else:
             destination_file_name = destination_file.filename
 
             source_file_name = source_file.filename
             action_map[
-                r"(?!/)[\[\(]{}[\)\]]".format(destination_file_name)
+                rf"(?!/)[\[\(]{destination_file_name}[\)\]]"
             ] = lambda session, logger: session.send_line("", logger)
             action_map[
-                r"(?!/)[\[\(]{}[\)\]]".format(source_file_name)
+                rf"(?!/)[\[\(]{source_file_name}[\)\]]"
             ] = lambda session, logger: session.send_line("", logger)
-            host = source_file.host
-            password = source_file.password
+            host = getattr(destination_file, "host", None)
+            password = getattr(destination_file, "password", None)
         if host:
             action_map[
-                r"(?!/){}(?!/)(?!.*(\[resolving host address))".format(host)
+                rf"(?!/){host}(?!/)(?!.*(\[resolving host address))"
             ] = lambda session, logger: session.send_line("", logger)
         if password:
             action_map[r"[Pp]assword:"] = lambda session, logger: session.send_line(
@@ -269,7 +278,7 @@ class SystemActions(object):
         return current_firmware
 
 
-class FirmwareActions(object):
+class FirmwareActions:
     def __init__(self, cli_service, logger):
         """Reboot actions.
 
@@ -316,9 +325,7 @@ class FirmwareActions(object):
         """
         self._logger.debug("Start cleaning boot configuration")
 
-        self._logger.info(
-            "Removing '{}' boot config line".format(config_line_to_remove)
-        )
+        self._logger.info(f"Removing '{config_line_to_remove}' boot config line")
         CommandTemplateExecutor(
             self._cli_service,
             configuration.NO,

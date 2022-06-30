@@ -1,16 +1,28 @@
 from __future__ import annotations
+
 from logging import Logger
 from typing import TYPE_CHECKING
 
 from cloudshell.shell.flows.connectivity.basic_flow import AbstractConnectivityFlow
+from cloudshell.shell.flows.connectivity.models.driver_response import (
+    ConnectivityActionResult,
+)
+
+from ..command_actions.add_remove_vlan_actions import AddRemoveVlanActions
+from ..command_actions.iface_actions import IFaceActions
+
 if TYPE_CHECKING:
-    from cloudshell.networking.arista.cli.arista_cli_configurator import AristaCLIConfigurator
-    from cloudshell.networking.arista.command_actions.add_remove_vlan_actions import AddRemoveVlanActions
-    from cloudshell.networking.arista.command_actions.iface_actions import IFaceActions
-    from cloudshell.shell.flows.connectivity.models.connectivity_model import ConnectivityActionModel
-    from cloudshell.shell.flows.connectivity.models.driver_response import ConnectivityActionResult
-    from cloudshell.shell.flows.connectivity.parse_request_service import AbstractParseConnectivityService
-    from cloudshell.shell.standards.networking.resource_config import NetworkingResourceConfig
+    from cloudshell.shell.flows.connectivity.models.connectivity_model import (
+        ConnectivityActionModel,
+    )
+    from cloudshell.shell.flows.connectivity.parse_request_service import (
+        AbstractParseConnectivityService,
+    )
+    from cloudshell.shell.standards.networking.resource_config import (
+        NetworkingResourceConfig,
+    )
+
+    from ..cli.arista_cli_configurator import AristaCLIConfigurator
 
 
 class AristaConnectivityFlow(AbstractConnectivityFlow):
@@ -31,8 +43,13 @@ class AristaConnectivityFlow(AbstractConnectivityFlow):
         qnq = action.connection_params.vlan_service_attrs.qnq
         c_tag = action.connection_params.vlan_service_attrs.ctag
         port_mode = action.connection_params.mode.name.lower()
-        self._logger.info(f"Add VLAN(s) {vlan_range} for ports {port_name} configuration started")
-        self._logger.debug(f"Vlan range: {vlan_range}, Port name: {port_name}, QNQ: {qnq}, C_tag: {c_tag}, Port_mode: {port_mode}")
+        self._logger.info(
+            f"Add VLAN(s) {vlan_range} for ports {port_name} configuration started"
+        )
+        self._logger.debug(
+            f"Vlan range: {vlan_range}, Port name: {port_name}, "
+            f"QNQ: {qnq}, C_tag: {c_tag}, Port_mode: {port_mode}"
+        )
 
         with self._cli_configurator.config_mode_service() as config_service:
             iface_action = IFaceActions(config_service, self._logger)
@@ -51,18 +68,18 @@ class AristaConnectivityFlow(AbstractConnectivityFlow):
             if not vlan_actions.verify_interface_configured(vlan_range, current_config):
                 raise Exception(
                     self.__class__.__name__,
-                    "[FAIL] VLAN(s) {} configuration failed".format(vlan_range),
+                    f"[FAIL] VLAN(s) {vlan_range} configuration failed",
                 )
 
-        self._logger.info(
-            "VLAN(s) {} configuration completed successfully".format(vlan_range)
-        )
+        self._logger.info(f"VLAN(s) {vlan_range} configuration completed successfully")
         return ConnectivityActionResult.success_result(action, "Success")
 
     def _remove_vlan(self, action: ConnectivityActionModel) -> ConnectivityActionResult:
         vlan_range = action.connection_params.vlan_id
         port_name = action.action_target.name
-        self._logger.info(f"Remove Vlan {vlan_range} for port {port_name} configuration started")
+        self._logger.info(
+            f"Remove Vlan {vlan_range} for port {port_name} configuration started"
+        )
         with self._cli_configurator.config_mode_service() as config_service:
             iface_action = IFaceActions(config_service, self._logger)
             vlan_actions = AddRemoveVlanActions(config_service, self._logger)
@@ -76,10 +93,8 @@ class AristaConnectivityFlow(AbstractConnectivityFlow):
             if vlan_actions.verify_interface_configured(vlan_range, current_config):
                 raise Exception(
                     self.__class__.__name__,
-                    "[FAIL] VLAN(s) {} removing failed".format(vlan_range),
+                    f"[FAIL] VLAN(s) {vlan_range} removing failed",
                 )
 
-        self._logger.info(
-            "VLAN(s) {} removing completed successfully".format(vlan_range)
-        )
+        self._logger.info(f"VLAN(s) {vlan_range} removing completed successfully")
         return ConnectivityActionResult.success_result(action, "Success")

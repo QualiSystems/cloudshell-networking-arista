@@ -4,7 +4,7 @@ from cloudshell.cli.command_template.command_template_executor import (
     CommandTemplateExecutor,
 )
 
-from cloudshell.networking.arista.command_templates.arista_configuration_templates import (  # noqa: E501
+from ..command_templates.arista_configuration_templates import (  # noqa: E501
     DISABLE_SNMP,
     ENABLE_SNMP,
     ENABLE_VRF_FOR_SNMP,
@@ -13,7 +13,7 @@ from cloudshell.networking.arista.command_templates.arista_configuration_templat
 )
 
 
-class EnableDisableSnmpActions(object):
+class EnableDisableSnmpActions:
     def __init__(self, cli_service, logger):
         """Reboot actions.
 
