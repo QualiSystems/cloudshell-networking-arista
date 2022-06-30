@@ -28,7 +28,7 @@ class AristaDefaultCommandMode(CommandMode):
 
 class AristaEnableCommandMode(CommandMode):
     PROMPT = (
-        r"((?<=\n)|(?<=^))"  # new line or begin of the line that don't saved in match
+        r"((?<=\n)|(?<=\r)|(?<=^))"  # new line or begin of the line that don't match
         r"((?!\(config.*?\))(\w|-|\(|\)))*"  # \w or - or () and without (config)
         r"#\s*$"
     )
@@ -42,7 +42,6 @@ class AristaEnableCommandMode(CommandMode):
         """
         self.resource_config = resource_config
         self._api = api
-        self._enable_password = None
 
         CommandMode.__init__(
             self,
@@ -52,17 +51,10 @@ class AristaEnableCommandMode(CommandMode):
             enter_action_map=self.enter_action_map(),
         )
 
-    @property
-    def enable_password(self):
-        if not self._enable_password:
-            password = self.resource_config.enable_password
-            self._enable_password = self._api.DecryptPassword(password).Value
-        return self._enable_password
-
     def enter_action_map(self):
         return {
             "[Pp]assword": lambda session, logger: session.send_line(
-                self.enable_password, logger
+                self.resource_config.enable_password, logger
             )
         }
 
@@ -91,9 +83,7 @@ class AristaConfigCommandMode(CommandMode):
         )
 
     def enter_action_map(self):
-        return {
-            r"{}.*$".format(AristaEnableCommandMode.PROMPT): self._check_config_mode
-        }
+        return {rf"{AristaEnableCommandMode.PROMPT}.*$": self._check_config_mode}
 
     def _check_config_mode(self, session, logger):
         error_message = "Failed to enter config mode, please check logs, for details"
@@ -101,9 +91,7 @@ class AristaConfigCommandMode(CommandMode):
         enable_prompt = AristaEnableCommandMode.PROMPT
 
         retry = 0
-        output = session.hardware_expect(
-            "", "{0}|{1}".format(conf_prompt, enable_prompt), logger
-        )
+        output = session.hardware_expect("", f"{conf_prompt}|{enable_prompt}", logger)
         while (
             not re.search(conf_prompt, output)
             and retry < self.MAX_ENTER_CONFIG_MODE_RETRIES
@@ -111,7 +99,7 @@ class AristaConfigCommandMode(CommandMode):
             time.sleep(self.ENTER_CONFIG_RETRY_TIMEOUT)
             output = session.hardware_expect(
                 AristaConfigCommandMode.ENTER_COMMAND,
-                "{0}|{1}".format(enable_prompt, conf_prompt),
+                f"{enable_prompt}|{conf_prompt}",
                 logger,
             )
             retry += 1
@@ -131,14 +119,14 @@ class AristaVrfCommandMode(CommandMode):
     NEW_EXIT_COMMAND = NEW_ENTER_COMMAND.format(DEFAULT_VRF_NAME)
     DEPRECATED_VRF_COMMAND_PATTERN = r"deprecated\s*by\s*\S*cli vrf"
 
-    class _parent_mode(object):
+    class _parent_mode:
         prompt = AristaEnableCommandMode.PROMPT
 
     def __init__(self, vrf_name):
         self.vrf_name = vrf_name
         new_enter_command = self.NEW_ENTER_COMMAND.format(vrf_name)
 
-        super(AristaVrfCommandMode, self).__init__(
+        super().__init__(
             self.PROMPT.format(vrf_name),
             self.ENTER_COMMAND.format(vrf_name),
             exit_command=self.EXIT_COMMAND,

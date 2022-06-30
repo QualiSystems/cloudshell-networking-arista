@@ -1,7 +1,13 @@
-from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-from cloudshell.networking.arista.runners.arista_configuration_runner import (
-    AristaConfigurationRunner,
+from cloudshell.shell.flows.configuration.basic_flow import (
+    ConfigurationType,
+    RestoreMethod,
+)
+from cloudshell.shell.flows.utils.url import RemoteURL
+
+from cloudshell.networking.arista.flows.arista_configuration_flow import (
+    AristaConfigurationFlow,
 )
 
 from tests.networking.arista.base_test import (
@@ -18,11 +24,19 @@ from tests.networking.arista.base_test import (
     "cloudshell.cli.session.ssh_session.SSHSession._clear_buffer",
     MagicMock(return_value=""),
 )
-class TestSaveConfig(BaseAristaTestCase):
+class TestSaveRestoreFlow(BaseAristaTestCase):
     def _setUp(self, attrs=None):
-        super(TestSaveConfig, self)._setUp(attrs)
-        self.runner = AristaConfigurationRunner(
-            self.logger, self.resource_config, self.api, self.cli_handler
+        super()._setUp(attrs)
+        self.flow = AristaConfigurationFlow(
+            self.logger, self.resource_config, self.cli_configurator
+        )
+
+    def setUp(self):
+        self._setUp(
+            {
+                "Backup Location": "Test-running-081018-215424",
+                "Backup Type": AristaConfigurationFlow.FILE_SYSTEM_SCHEME,
+            }
         )
 
     @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
@@ -30,7 +44,7 @@ class TestSaveConfig(BaseAristaTestCase):
     def test_save_anonymous(self, send_mock, recv_mock):
         self._setUp()
         host = "192.168.122.10"
-        ftp_path = "ftp://{}".format(host)
+        ftp_path = f"ftp://{host}"
         configuration_type = "running"
 
         emu = CliEmulator(
@@ -47,7 +61,7 @@ class TestSaveConfig(BaseAristaTestCase):
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.save(ftp_path, configuration_type)
+        self.flow.save(ftp_path, configuration_type, "")
 
         emu.check_calls()
 
@@ -58,7 +72,7 @@ class TestSaveConfig(BaseAristaTestCase):
         user = "user"
         password = "password"
         host = "192.168.122.10"
-        ftp_path = "ftp://{}:{}@{}".format(user, password, host)
+        ftp_path = f"ftp://{user}:{password}@{host}"
         configuration_type = "running"
 
         emu = CliEmulator(
@@ -75,7 +89,7 @@ class TestSaveConfig(BaseAristaTestCase):
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.save(ftp_path, configuration_type)
+        self.flow.save(ftp_path, configuration_type, "")
 
         emu.check_calls()
 
@@ -87,13 +101,13 @@ class TestSaveConfig(BaseAristaTestCase):
         user = "user"
         password = "password"
         host = "192.168.122.10"
-        ftp_path = "ftp://{}:{}@{}".format(user, password, host)
+        ftp_path = f"ftp://{user}:{password}@{host}"
         configuration_type = "running"
 
         emu = CliEmulator(
             [
                 Command(
-                    "routing-context vrf {}".format(vrf_name),
+                    f"routing-context vrf {vrf_name}",
                     VRF_PROMPT.format(vrf_name=vrf_name),
                 ),
                 Command(
@@ -109,7 +123,7 @@ class TestSaveConfig(BaseAristaTestCase):
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.save(ftp_path, configuration_type)
+        self.flow.save(ftp_path, configuration_type, vrf_name)
 
         emu.check_calls()
 
@@ -120,7 +134,7 @@ class TestSaveConfig(BaseAristaTestCase):
         user = "user"
         password = "password"
         host = "192.168.122.10"
-        ftp_path = "ftp://{}:{}@{}".format(user, password, host)
+        ftp_path = f"ftp://{user}:{password}@{host}"
         configuration_type = "startup"
 
         emu = CliEmulator(
@@ -137,7 +151,7 @@ class TestSaveConfig(BaseAristaTestCase):
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.save(ftp_path, configuration_type)
+        self.flow.save(ftp_path, configuration_type, "")
 
         emu.check_calls()
 
@@ -146,7 +160,7 @@ class TestSaveConfig(BaseAristaTestCase):
     def test_fail_to_save(self, send_mock, recv_mock):
         self._setUp()
         host = "192.168.122.10"
-        ftp_path = "ftp://{}".format(host)
+        ftp_path = f"ftp://{host}"
         configuration_type = "running"
 
         emu = CliEmulator(
@@ -163,13 +177,8 @@ class TestSaveConfig(BaseAristaTestCase):
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.assertRaisesRegexp(
-            Exception,
-            "Copy Command failed",
-            self.runner.save,
-            ftp_path,
-            configuration_type,
-        )
+        with self.assertRaisesRegex(Exception, "Copy Command failed"):
+            self.flow.save(ftp_path, configuration_type, "")
 
         emu.check_calls()
 
@@ -179,7 +188,7 @@ class TestSaveConfig(BaseAristaTestCase):
         self._setUp(
             {
                 "Backup Location": "",
-                "Backup Type": AristaConfigurationRunner.DEFAULT_FILE_SYSTEM,
+                "Backup Type": AristaConfigurationFlow.FILE_SYSTEM_SCHEME,
             }
         )
         path = ""
@@ -197,6 +206,85 @@ class TestSaveConfig(BaseAristaTestCase):
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.save(path, configuration_type)
+        self.flow.save(path, configuration_type)
+
+        emu.check_calls()
+
+    @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
+    @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
+    def test_restore_running_override(self, send_mock, recv_mock):
+        self._setUp()
+        host = "192.168.122.10"
+        file_name = "Test-running-100418-163658"
+        remote_path = f"ftp://{host}/{file_name}"
+
+        emu = CliEmulator([Command(f"configure replace {remote_path}", ENABLE_PROMPT)])
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        self.flow._restore_flow(
+            RemoteURL.from_str(remote_path),
+            ConfigurationType.RUNNING,
+            RestoreMethod.OVERRIDE,
+            "",
+        )
+
+        emu.check_calls()
+
+    @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
+    @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
+    def test_restore_running_append(self, send_mock, recv_mock):
+        self._setUp()
+        host = "192.168.122.10"
+        file_name = "Test-running-100418-163658"
+        remote_path = f"ftp://{host}/{file_name}"
+        configuration_type = "running"
+
+        emu = CliEmulator(
+            [
+                Command(
+                    f"copy {remote_path} {configuration_type}-config",
+                    "Copy completed successfully.\n" "{}".format(ENABLE_PROMPT),
+                )
+            ]
+        )
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        self.flow._restore_flow(
+            RemoteURL.from_str(remote_path),
+            ConfigurationType.RUNNING,
+            RestoreMethod.APPEND,
+            "",
+        )
+
+        emu.check_calls()
+
+    @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
+    @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
+    def test_restore_startup(self, send_mock, recv_mock):
+        self._setUp()
+        host = "192.168.122.10"
+        file_name = "Test-startup-100418-163658"
+        remote_path = f"ftp://{host}/{file_name}"
+        configuration_type = "startup"
+
+        emu = CliEmulator(
+            [
+                Command(
+                    f"copy {remote_path} {configuration_type}-config",
+                    "Copy completed successfully.\n" "{}".format(ENABLE_PROMPT),
+                )
+            ]
+        )
+        send_mock.side_effect = emu.send_line
+        recv_mock.side_effect = emu.receive_all
+
+        self.flow._restore_flow(
+            RemoteURL.from_str(remote_path),
+            ConfigurationType.STARTUP,
+            RestoreMethod.OVERRIDE,
+            "",
+        )
 
         emu.check_calls()
