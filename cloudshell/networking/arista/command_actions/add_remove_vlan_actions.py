@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING
 
@@ -6,19 +7,16 @@ from cloudshell.cli.command_template.command_template_executor import (
     CommandTemplateExecutor,
 )
 
-from cloudshell.networking.arista.command_templates import (
-    add_remove_vlan as vlan_command_template,
-)
-from cloudshell.networking.arista.command_templates import (
-    iface as iface_command_template,
-)
+from ..command_templates import add_remove_vlan as vlan_command_template
+from ..command_templates import iface as iface_command_template
 
 if TYPE_CHECKING:
     from logging import Logger
+
     from cloudshell.cli.service.cli_service import CliService
 
 
-class AddRemoveVlanActions(object):
+class AddRemoveVlanActions:
     def __init__(self, cli_service: CliService, logger: Logger):
         """Add remove vlan."""
         self._cli_service = cli_service
@@ -33,7 +31,7 @@ class AddRemoveVlanActions(object):
         :return: True or False
         """
         return re.search(
-            r"switchport.+vlan\s+{0}$".format(str(vlan_range)),
+            rf"switchport.+vlan\s+{str(vlan_range)}$",
             current_config,
             re.MULTILINE | re.IGNORECASE | re.DOTALL,
         )

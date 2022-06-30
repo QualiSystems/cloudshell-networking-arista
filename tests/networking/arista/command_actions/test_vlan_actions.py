@@ -1,8 +1,7 @@
 from unittest import TestCase
+from unittest.mock import MagicMock, create_autospec, patch
 
-from mock import MagicMock, create_autospec, patch
-
-from cloudshell.cli.cli_service_impl import CliServiceImpl
+from cloudshell.cli.service.cli_service_impl import CliServiceImpl
 
 from cloudshell.networking.arista.command_actions.add_remove_vlan_actions import (
     AddRemoveVlanActions,

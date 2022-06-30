@@ -19,7 +19,7 @@ ERROR_MAP = OrderedDict(
 )
 
 VLAN_SUB_IFACE = CommandTemplate(
-    ("encapsulation dot1q {vlan_id} " "[, untagged{untagged}] [second-dot1q any{qnq}]")
+    "encapsulation dot1q {vlan_id} " "[, untagged{untagged}] [second-dot1q any{qnq}]"
 )
 
 CONFIGURE_VLAN = CommandTemplate(

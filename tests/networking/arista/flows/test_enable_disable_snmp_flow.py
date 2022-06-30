@@ -1,22 +1,21 @@
-from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-from cloudshell.networking.arista.runners.arista_autoload_runner import (
-    AristaAutoloadRunner,
+from cloudshell.snmp.snmp_parameters import SnmpParametersHelper
+
+from cloudshell.networking.arista.flows.enable_disable_snmp import (
+    AristaEnableDisableSNMPFlow,
 )
-from cloudshell.networking.arista.snmp.arista_snmp_handler import AristaSnmpHandler
 
 from tests.networking.arista.base_test import (
     CONFIG_PROMPT,
-    ENABLE_PROMPT,
     BaseAristaTestCase,
     CliEmulator,
     Command,
 )
 
 
-@patch("cloudshell.devices.snmp_handler.QualiSnmp", MagicMock())
 @patch(
-    "cloudshell.networking.arista.flows.arista_autoload_flow.AristaSNMPAutoload",
+    "cloudshell.networking.arista.flows.arista_autoload_flow.AristaAutoloadFlow",
     MagicMock(),
 )
 @patch("cloudshell.cli.session.ssh_session.paramiko", MagicMock())
@@ -39,13 +38,10 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
             "Disable SNMP": "False",
         }
         snmp_attrs.update(attrs)
-        super(TestEnableDisableSnmp, self)._setUp(snmp_attrs)
-        self.snmp_handler = AristaSnmpHandler(
-            self.resource_config, self.logger, self.api, self.cli_handler
-        )
-        self.runner = AristaAutoloadRunner(
-            self.resource_config, self.logger, self.snmp_handler
-        )
+        super()._setUp(snmp_attrs)
+        self.snmp_parameters = SnmpParametersHelper(
+            self.resource_config
+        ).get_snmp_parameters()
 
     @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
     @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
@@ -63,13 +59,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                     "Community access: read-only\n"
                     "{}".format(CONFIG_PROMPT),
                 ),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        enable_disable_snmp_flow.enable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
@@ -111,13 +109,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                     "Community access: read-only\n"
                     "{}".format(CONFIG_PROMPT),
                 ),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger, vrf_name="management"
+        )
+        enable_disable_snmp_flow.enable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
@@ -158,14 +158,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                     "Community access: read-only\n"
                     "{}".format(CONFIG_PROMPT),
                 ),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
-
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger, vrf_name="management"
+        )
+        enable_disable_snmp_flow.enable_snmp(self.snmp_parameters)
         emu.check_calls()
 
     @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
@@ -182,13 +183,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                     "Community access: read-only\n"
                     "{}".format(CONFIG_PROMPT),
                 ),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        enable_disable_snmp_flow.enable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
@@ -203,14 +206,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                 Command("show snmp community", CONFIG_PROMPT),
                 Command("snmp-server community public ro", CONFIG_PROMPT),
                 Command("show snmp community", CONFIG_PROMPT),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
-
-        with self.assertRaisesRegexp(Exception, "Failed to create SNMP community"):
-            self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        with self.assertRaisesRegex(Exception, "Failed to create SNMP community"):
+            enable_disable_snmp_flow.enable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
@@ -230,24 +234,27 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                     "Community access: read-only\n"
                     "{}".format(CONFIG_PROMPT),
                 ),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
-
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        enable_disable_snmp_flow.enable_snmp(self.snmp_parameters)
         emu.check_calls()
 
-    @patch("tests.networking.arista.base_test.AristaCliHandler")
-    def test_enable_snmp_without_community(self, cli_handler_mock):
+    @patch("tests.networking.arista.base_test.AristaCLIConfigurator")
+    def test_enable_snmp_without_community(self, cli_configurator_mock):
         self._setUp({"SNMP Read Community": ""})
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        with self.assertRaisesRegex(Exception, "SNMP community cannot be empty"):
+            enable_disable_snmp_flow.enable_snmp(self.snmp_parameters)
 
-        with self.assertRaisesRegexp(Exception, "SNMP community cannot be empty"):
-            self.runner.discover()
-
-        cli_handler_mock.get_cli_service.assert_not_called()
+        cli_configurator_mock.get_cli_service.assert_not_called()
 
     @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
     @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
@@ -264,17 +271,19 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                 Command("configure terminal", CONFIG_PROMPT),
                 Command("no snmp-server community public", CONFIG_PROMPT),
                 Command("show snmp community", CONFIG_PROMPT),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        enable_disable_snmp_flow.disable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
-    @patch("tests.networking.arista.base_test.AristaCliHandler")
+    @patch("tests.networking.arista.base_test.AristaCLIConfigurator")
     def test_disable_snmp_without_community(self, cli_handler_mock):
         self._setUp(
             {
@@ -284,8 +293,12 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
             }
         )
 
-        with self.assertRaisesRegexp(Exception, "SNMP community cannot be empty"):
-            self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+
+        with self.assertRaisesRegex(Exception, "SNMP community cannot be empty"):
+            enable_disable_snmp_flow.disable_snmp(self.snmp_parameters)
 
         cli_handler_mock.get_cli_service.assert_not_called()
 
@@ -304,13 +317,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                 Command("configure terminal", CONFIG_PROMPT),
                 Command("no snmp-server community public", CONFIG_PROMPT),
                 Command("show snmp community", CONFIG_PROMPT),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        enable_disable_snmp_flow.disable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
@@ -334,14 +349,16 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                     "Community access: read-only\n"
                     "{}".format(CONFIG_PROMPT),
                 ),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        with self.assertRaisesRegexp(Exception, "Failed to remove SNMP community"):
-            self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        with self.assertRaisesRegex(Exception, "Failed to remove SNMP community"):
+            enable_disable_snmp_flow.disable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
@@ -361,28 +378,33 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
                 Command("configure terminal", CONFIG_PROMPT),
                 Command("no snmp-server community private", CONFIG_PROMPT),
                 Command("show snmp community", CONFIG_PROMPT),
-                Command("end", ENABLE_PROMPT),
             ]
         )
         send_mock.side_effect = emu.send_line
         recv_mock.side_effect = emu.receive_all
 
-        self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        enable_disable_snmp_flow.disable_snmp(self.snmp_parameters)
 
         emu.check_calls()
 
-    @patch("tests.networking.arista.base_test.AristaCliHandler")
+    @patch("tests.networking.arista.base_test.AristaCLIConfigurator")
     def test_enable_snmp_v3(self, cli_handler_mock):
         cli_instance_mock = MagicMock()
         cli_handler_mock.return_value = cli_instance_mock
         self._setUp({"SNMP Version": "v3"})
 
-        with self.assertRaisesRegexp(Exception, "Do not support SNMP V3"):
-            self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+        with self.assertRaisesRegex(Exception, "Do not support SNMP V3"):
+            enable_disable_snmp_flow.disable_snmp(self.snmp_parameters)
 
         cli_instance_mock.get_cli_service.assert_not_called()
 
-    @patch("tests.networking.arista.base_test.AristaCliHandler")
+    @patch("tests.networking.arista.base_test.AristaCLIConfigurator")
     def test_disable_snmp_v3(self, cli_handler_mock):
         cli_instance_mock = MagicMock()
         cli_handler_mock.return_value = cli_instance_mock
@@ -396,7 +418,11 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
             }
         )
 
-        with self.assertRaisesRegexp(Exception, "Do not support SNMP V3"):
-            self.runner.discover()
+        enable_disable_snmp_flow = AristaEnableDisableSNMPFlow(
+            self.cli_configurator, self.logger
+        )
+
+        with self.assertRaisesRegex(Exception, "Do not support SNMP V3"):
+            enable_disable_snmp_flow.disable_snmp(self.snmp_parameters)
 
         cli_instance_mock.get_cli_service.assert_not_called()

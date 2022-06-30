@@ -5,7 +5,7 @@ from cloudshell.cli.session.telnet_session import TelnetSession
 
 class ConsoleTelnetSession(TelnetSession):
     SESSION_TYPE = "CONSOLE_TELNET"
-    _START_WITH_NEW_LINE=False
+    _START_WITH_NEW_LINE = False
 
     def __init__(
         self,
@@ -17,7 +17,7 @@ class ConsoleTelnetSession(TelnetSession):
         *args,
         **kwargs
     ):
-        super(ConsoleTelnetSession, self).__init__(
+        super().__init__(
             host,
             username,
             password,

@@ -4,16 +4,12 @@ from cloudshell.cli.command_template.command_template_executor import (
     CommandTemplateExecutor,
 )
 
-from cloudshell.networking.arista.command_templates import (
-    add_remove_vlan as vlan_command_template,
-)
-from cloudshell.networking.arista.command_templates import configuration
-from cloudshell.networking.arista.command_templates import (
-    iface as iface_command_template,
-)
+from ..command_templates import add_remove_vlan as vlan_command_template
+from ..command_templates import configuration
+from ..command_templates import iface as iface_command_template
 
 
-class IFaceActions(object):
+class IFaceActions:
     def __init__(self, cli_service, logger):
         """Add remove vlan.
 
@@ -42,7 +38,7 @@ class IFaceActions(object):
             temp_port_name = temp_port_name.replace("-", "/")
 
             self._logger.info(
-                "Interface name validation OK, portname = {0}".format(temp_port_name)
+                f"Interface name validation OK, portname = {temp_port_name}"
             )
         return temp_port_name
 

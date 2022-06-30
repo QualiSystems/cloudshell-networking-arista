@@ -1,8 +1,7 @@
 from unittest import TestCase
+from unittest.mock import MagicMock, create_autospec
 
-from mock import MagicMock, create_autospec
-
-from cloudshell.cli.cli_service import CliService
+from cloudshell.cli.service.cli_service import CliService
 
 from cloudshell.networking.arista.command_actions.enable_disable_snmp_actions import (
     EnableDisableSnmpActions,
