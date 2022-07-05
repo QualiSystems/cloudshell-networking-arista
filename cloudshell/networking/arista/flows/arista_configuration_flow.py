@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from cloudshell.shell.flows.configuration.basic_flow import (
     AbstractConfigurationFlow,
@@ -13,6 +13,7 @@ from ..command_actions.system_actions import SystemActions
 
 if TYPE_CHECKING:
     from logging import Logger
+    from typing import Union
 
     from cloudshell.shell.flows.utils.url import RemoteURL
     from cloudshell.shell.standards.networking.resource_config import (

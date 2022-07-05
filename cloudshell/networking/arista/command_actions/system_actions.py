@@ -66,14 +66,14 @@ class SystemActions:
             ] = lambda session, logger: session.send_line("", logger)
             host = getattr(destination_file, "host", None)
             password = getattr(destination_file, "password", None)
-        if host:
-            action_map[
-                rf"(?!/){host}(?!/)(?!.*(\[resolving host address))"
-            ] = lambda session, logger: session.send_line("", logger)
         if password:
             action_map[r"[Pp]assword:"] = lambda session, logger: session.send_line(
                 password, logger
             )
+        if host:
+            action_map[
+                rf"(?!/){host}(?!/)(?!.*(\[resolving host address))"
+            ] = lambda session, logger: session.send_line("", logger)
         return action_map
 
     def copy(

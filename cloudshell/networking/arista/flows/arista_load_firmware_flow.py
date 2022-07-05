@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 import re
-from logging import Logger
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from cloudshell.shell.flows.firmware.basic_flow import AbstractFirmwareFlow
 from cloudshell.shell.flows.utils.url import BasicLocalUrl
@@ -11,6 +10,9 @@ from cloudshell.shell.flows.utils.url import BasicLocalUrl
 from ..command_actions.system_actions import FirmwareActions, SystemActions
 
 if TYPE_CHECKING:
+    from logging import Logger
+    from typing import Union
+
     from cloudshell.shell.flows.utils.url import RemoteURL
     from cloudshell.shell.standards.networking.resource_config import (
         NetworkingResourceConfig,
