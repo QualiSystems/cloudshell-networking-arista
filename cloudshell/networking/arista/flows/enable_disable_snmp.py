@@ -1,15 +1,20 @@
-from logging import Logger
-from typing import Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
 
 from cloudshell.snmp.snmp_configurator import EnableDisableSnmpFlowInterface
-from cloudshell.snmp.snmp_parameters import (
-    SNMPReadParameters,
-    SNMPV3Parameters,
-    SNMPWriteParameters,
-)
+from cloudshell.snmp.snmp_parameters import SNMPV3Parameters
 
-from ..cli.arista_cli_configurator import AristaCLIConfigurator
 from ..command_actions.enable_disable_snmp_actions import EnableDisableSnmpActions
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    from cloudshell.snmp.snmp_parameters import SNMPReadParameters, SNMPWriteParameters
+
+    from ..cli.arista_cli_configurator import AristaCLIConfigurator
+
+    SnmpParams = Union[SNMPReadParameters, SNMPWriteParameters, SNMPV3Parameters]
 
 
 class AristaEnableDisableSNMPFlow(EnableDisableSnmpFlowInterface):
@@ -23,12 +28,7 @@ class AristaEnableDisableSNMPFlow(EnableDisableSnmpFlowInterface):
         self._logger = logger
         self._vrf_name = vrf_name
 
-    def enable_snmp(
-        self,
-        snmp_parameters: Union[
-            SNMPReadParameters, SNMPWriteParameters, SNMPV3Parameters
-        ],
-    ):
+    def enable_snmp(self, snmp_parameters: SnmpParams):
         if (
             hasattr(snmp_parameters, "snmp_community")
             and not snmp_parameters.snmp_community
@@ -65,9 +65,7 @@ class AristaEnableDisableSNMPFlow(EnableDisableSnmpFlowInterface):
 
     def disable_snmp(
         self,
-        snmp_parameters: Union[
-            SNMPReadParameters, SNMPWriteParameters, SNMPV3Parameters
-        ],
+        snmp_parameters: (SNMPReadParameters | SNMPWriteParameters | SNMPV3Parameters),
     ):
         if (
             hasattr(snmp_parameters, "snmp_community")

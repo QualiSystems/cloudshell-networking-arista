@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from logging import Logger
 from typing import TYPE_CHECKING
 
 from cloudshell.shell.flows.connectivity.basic_flow import AbstractConnectivityFlow
@@ -12,6 +11,8 @@ from ..command_actions.add_remove_vlan_actions import AddRemoveVlanActions
 from ..command_actions.iface_actions import IFaceActions
 
 if TYPE_CHECKING:
+    from logging import Logger
+
     from cloudshell.shell.flows.connectivity.models.connectivity_model import (
         ConnectivityActionModel,
     )

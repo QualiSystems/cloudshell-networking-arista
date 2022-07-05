@@ -4,7 +4,7 @@ from cloudshell.cli.command_template.command_template_executor import (
     CommandTemplateExecutor,
 )
 
-from ..command_templates.arista_configuration_templates import (  # noqa: E501
+from ..command_templates.arista_configuration_templates import (
     DISABLE_SNMP,
     ENABLE_SNMP,
     ENABLE_VRF_FOR_SNMP,
