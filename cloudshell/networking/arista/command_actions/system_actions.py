@@ -64,8 +64,8 @@ class SystemActions:
             action_map[
                 rf"(?!/)[\[\(]{source_file_name}[\)\]]"
             ] = lambda session, logger: session.send_line("", logger)
-            host = getattr(destination_file, "host", None)
-            password = getattr(destination_file, "password", None)
+            host = getattr(source_file, "host", None)
+            password = getattr(source_file, "password", None)
         if password:
             action_map[r"[Pp]assword:"] = lambda session, logger: session.send_line(
                 password, logger
