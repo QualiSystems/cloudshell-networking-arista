@@ -233,35 +233,6 @@ class TestSaveRestoreFlow(BaseAristaTestCase):
 
     @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
     @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
-    def test_restore_running_append(self, send_mock, recv_mock):
-        self._setUp()
-        host = "192.168.122.10"
-        file_name = "Test-running-100418-163658"
-        remote_path = f"ftp://{host}/{file_name}"
-        configuration_type = "running"
-
-        emu = CliEmulator(
-            [
-                Command(
-                    f"copy {remote_path} {configuration_type}-config",
-                    "Copy completed successfully.\n" "{}".format(ENABLE_PROMPT),
-                )
-            ]
-        )
-        send_mock.side_effect = emu.send_line
-        recv_mock.side_effect = emu.receive_all
-
-        self.flow._restore_flow(
-            RemoteURL.from_str(remote_path),
-            ConfigurationType.RUNNING,
-            RestoreMethod.APPEND,
-            "",
-        )
-
-        emu.check_calls()
-
-    @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
-    @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
     def test_restore_startup(self, send_mock, recv_mock):
         self._setUp()
         host = "192.168.122.10"
