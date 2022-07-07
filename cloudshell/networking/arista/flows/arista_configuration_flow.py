@@ -74,23 +74,25 @@ class AristaConfigurationFlow(AbstractConfigurationFlow):
         restore_method: RestoreMethod,
         vrf_management_name: str | None,
     ) -> None:
-        conf_type = configuration_type.value + "-config"
         path = str(config_path)
 
         with self._cli_configurator.enable_mode_service() as enable_session:
             restore_action = SystemActions(enable_session, self._logger)
             copy_action_map = restore_action.prepare_action_map(
-                config_path, BasicLocalUrl.from_str(f"{self.file_system}/{conf_type}")
+                config_path,
+                BasicLocalUrl.from_str(
+                    f"{self.file_system}/{configuration_type.value}"
+                ),
             )
 
-            if "running" in conf_type and restore_method == RestoreMethod.OVERRIDE:
+            if configuration_type == ConfigurationType.RUNNING:
                 restore_action.override_running(
                     path, vrf_management_name, action_map=copy_action_map
                 )
             else:
                 restore_action.copy(
                     path,
-                    conf_type,
+                    configuration_type.value + "-config",
                     vrf_management_name,
                     action_map=copy_action_map,
                 )
