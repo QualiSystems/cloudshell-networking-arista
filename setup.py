@@ -13,7 +13,7 @@ with open("test_requirements.txt") as f_tests:
 
 setup(
     name="cloudshell-networking-arista",
-    url="http://www.qualisystems.com/",
+    url="https://github.com/QualiSystems/cloudshell-networking-arista",
     author="QualiSystems",
     author_email="info@qualisystems.com",
     packages=find_packages(),
@@ -22,6 +22,8 @@ setup(
     test_suite="tests",
     tests_require=required_for_tests,
     version=version_from_file,
-    description="QualiSystems networking Arista specific Package",
+    description="QualiSystems Python package",
+    long_description="Arista Networking Shell operations",
+    long_description_content_type="text/x-rst",
     include_package_dat=True,
 )
