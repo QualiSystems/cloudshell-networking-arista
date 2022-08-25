@@ -29,7 +29,7 @@ class AristaDefaultCommandMode(CommandMode):
 class AristaEnableCommandMode(CommandMode):
     PROMPT = (
         r"((?<=\n)|(?<=\r)|(?<=^))"  # new line or begin of the line that don't match
-        r"((?!\(config.*?\))(\w|-|\(|\)))*"  # \w or - or () and without (config)
+        r"((?!\(config.*?\))(\w|\.|-|\(|\)))*"  # any \w,.,-,(), without (config)
         r"#\s*$"
     )
     ENTER_COMMAND = "enable"
