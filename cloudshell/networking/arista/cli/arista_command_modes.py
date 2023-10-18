@@ -12,7 +12,7 @@ class AristaDefaultCommandMode(CommandMode):
     def __init__(self, resource_config, api):
         """Initialize Default command mode.
 
-        only for cases when session started not in enable mode
+        only for cases when the session started not in enable mode
         :param resource_config:
         """
         self.resource_config = resource_config
@@ -28,8 +28,8 @@ class AristaDefaultCommandMode(CommandMode):
 
 class AristaEnableCommandMode(CommandMode):
     PROMPT = (
-        r"((?<=\n)|(?<=\r)|(?<=^))"  # new line or begin of the line that don't match
-        r"((?!\(config.*?\))(\w|\.|-|\(|\)))*"  # any \w,.,-,(), without (config)
+        r"((?<=\n)|(?<=\r)|(?<=^))"  # new line or beginning of the line that doesn't match
+        r"((?!\(config.*?\))(\w|\.|-|:|\(|\)))*"  # any \w,.,-,(),:(in case timestamp configured) without (config)
         r"#\s*$"
     )
     ENTER_COMMAND = "enable"

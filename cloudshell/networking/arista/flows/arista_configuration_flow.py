@@ -31,7 +31,7 @@ class AristaConfigurationFlow(AbstractConfigurationFlow):
         ConfigurationType.STARTUP,
     }
     SUPPORTED_RESTORE_METHODS = {RestoreMethod.OVERRIDE}
-    FILE_SYSTEM_SCHEME = "flash:"
+    FILE_SYSTEM_SCHEME = "flash:/"
 
     def __init__(
         self,

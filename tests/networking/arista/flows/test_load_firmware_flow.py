@@ -32,7 +32,7 @@ class TestAristaLoadFirmwareFlow(TestCase):
         get_firmware_url.return_value = url
         vrf_name_mock = MagicMock()
         get_vrf_mgmt_name.return_value = vrf_name_mock
-        path = MagicMock()
+        path = "ftp://test_user:test_password@host:21/path/to/file"
         vrf_name = MagicMock()
         self.firmware_flow.load_firmware(path, vrf_name)
         get_firmware_url.assert_called_once_with(path)
