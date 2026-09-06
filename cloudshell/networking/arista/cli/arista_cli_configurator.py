@@ -51,6 +51,12 @@ class AristaCLIConfigurator(AbstractModeConfigurator):
         return self.modes[AristaConfigCommandMode]
 
     @property
+    def _cli_type(self) -> str:
+        # cloudshell-shell-standards 2.x returns an enum, 1.x returns a string
+        cli_type = self._resource_config.cli_connection_type
+        return cli_type if isinstance(cli_type, str) else cli_type.value
+
+    @property
     def _resource_address(self) -> str:
         if self._cli_type.lower() == "console":
             return self._resource_config.console_server_ip_address

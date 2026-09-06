@@ -110,6 +110,7 @@ class BaseAristaTestCase(TestCase):
         context.resource.name = "Arista"
         context.resource.fullname = "Arista"
         context.resource.family = "CS_Router"
+        context.resource.model = self.SHELL_NAME
         context.resource.address = "10.0.1.1"
         context.resource.attributes = {}
         context.resource.id = "test_id"
@@ -120,7 +121,27 @@ class BaseAristaTestCase(TestCase):
             "Enable Password": ENABLE_PASSWORD,
             "host": "10.0.1.1",
             "CLI Connection Type": "ssh",
+            "CLI TCP Port": "22",
             "Sessions Concurrency Limit": "1",
+            "Backup Location": "",
+            "Backup Type": "File System",
+            "Backup User": "",
+            "Backup Password": "",
+            "Console Server IP Address": "",
+            "Console User": "",
+            "Console Port": "0",
+            "Console Password": "",
+            "VRF Management Name": "",
+            "SNMP Read Community": "",
+            "SNMP Write Community": "",
+            "SNMP V3 User": "",
+            "SNMP V3 Password": "",
+            "SNMP V3 Private Key": "",
+            "SNMP V3 Authentication Protocol": "No Authentication Protocol",
+            "SNMP V3 Privacy Protocol": "No Privacy Protocol",
+            "SNMP Version": "v2c",
+            "Enable SNMP": "False",
+            "Disable SNMP": "False",
         }
         attributes.update(attrs or {})
 
@@ -136,10 +157,8 @@ class BaseAristaTestCase(TestCase):
         self.api = MagicMock(DecryptPassword=lambda password: MagicMock(Value=password))
 
         self.resource_config = NetworkingResourceConfig.from_context(
-            self.SHELL_NAME,
             self.create_context(attrs),
             self.api,
-            self.SUPPORTED_OS,
         )
         self._cli = CLI(
             SessionPoolManager(

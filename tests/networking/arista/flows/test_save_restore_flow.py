@@ -35,7 +35,7 @@ class TestSaveRestoreFlow(BaseAristaTestCase):
         self._setUp(
             {
                 "Backup Location": "Test-running-081018-215424",
-                "Backup Type": AristaConfigurationFlow.FILE_SYSTEM_SCHEME,
+                "Backup Type": "File System",
             }
         )
 
@@ -188,7 +188,7 @@ class TestSaveRestoreFlow(BaseAristaTestCase):
         self._setUp(
             {
                 "Backup Location": "",
-                "Backup Type": AristaConfigurationFlow.FILE_SYSTEM_SCHEME,
+                "Backup Type": "File System",
             }
         )
         path = ""

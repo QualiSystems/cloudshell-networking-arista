@@ -28,8 +28,10 @@ class AristaAutoloadFlow(AbstractAutoloadFlow):
         self, supported_os: list[str], resource_model: NetworkingResourceModel
     ) -> AutoLoadDetails:
         with self._snmp_configurator.get_service() as snmp_service:
-            autoload_handler = GenericSNMPAutoload(snmp_service, self._logger)
+            autoload_handler = GenericSNMPAutoload(
+                snmp_service, self._logger, resource_model
+            )
             snmp_service.add_mib_folder_path(
                 os.path.join(os.path.dirname(__file__), "..", "snmp", "mibs")
             )
-            return autoload_handler.discover(supported_os, resource_model)
+            return autoload_handler.discover(supported_os)
