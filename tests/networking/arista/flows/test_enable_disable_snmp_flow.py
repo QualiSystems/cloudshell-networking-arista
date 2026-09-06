@@ -1,6 +1,9 @@
 from unittest.mock import MagicMock, patch
 
-from cloudshell.snmp.snmp_parameters import SnmpParametersHelper
+from cloudshell.snmp.snmp_parameters import (
+    SNMPReadParameters,
+    get_snmp_parameters_from_config,
+)
 
 from cloudshell.networking.arista.flows.enable_disable_snmp import (
     AristaEnableDisableSNMPFlow,
@@ -39,9 +42,15 @@ class TestEnableDisableSnmp(BaseAristaTestCase):
         }
         snmp_attrs.update(attrs)
         super()._setUp(snmp_attrs)
-        self.snmp_parameters = SnmpParametersHelper(
-            self.resource_config
-        ).get_snmp_parameters()
+        try:
+            self.snmp_parameters = get_snmp_parameters_from_config(self.resource_config)
+        except Exception:
+            # empty community: build the parameters without validation so the
+            # flow-level validation can be tested
+            self.snmp_parameters = SNMPReadParameters(
+                self.resource_config.address,
+                self.resource_config.snmp_read_community,
+            )
 
     @patch("cloudshell.cli.session.ssh_session.SSHSession._receive_all")
     @patch("cloudshell.cli.session.ssh_session.SSHSession.send_line")
